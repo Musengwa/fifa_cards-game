@@ -839,7 +839,6 @@ export default function GroupDetail() {
                     user={member}
                     attributes={group.attributes}
                     ratings={ratings[member.id] || {}}
-                    spinning
                     showDownload
                   />
                 ))}

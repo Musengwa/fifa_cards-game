@@ -192,7 +192,6 @@ export default function Showroom({ members, attributes, ratings, votes, awardCat
                   ratings={ratings[membersWithStats[1].id] || {}}
                   cardTheme={t.cardTheme}
                   showDownload
-                  spinning
                 />
                 {membersWithStats[1].awardsWon > 0 && (
                   <div className="flex gap-1">
@@ -218,7 +217,6 @@ export default function Showroom({ members, attributes, ratings, votes, awardCat
                     ratings={ratings[membersWithStats[0].id] || {}}
                     cardTheme={t.cardTheme}
                     showDownload
-                  spinning
                   />
                 </div>
                 {membersWithStats[0].awardsWon > 0 && (
@@ -239,7 +237,6 @@ export default function Showroom({ members, attributes, ratings, votes, awardCat
                   ratings={ratings[membersWithStats[2].id] || {}}
                   cardTheme={t.cardTheme}
                   showDownload
-                  spinning
                 />
                 {membersWithStats[2].awardsWon > 0 && (
                   <div className="flex gap-1">
@@ -268,7 +265,6 @@ export default function Showroom({ members, attributes, ratings, votes, awardCat
                   ratings={ratings[member.id] || {}}
                   cardTheme={t.cardTheme}
                   showDownload
-                  spinning
                 />
                 {member.awardsWon > 0 && (
                   <div className="flex justify-center gap-1 mt-2">

@@ -13,7 +13,7 @@ import {
 import FifaCard, { CardTheme, cardThemeStyles } from '../components/FifaCard';
 import ClubPicker, { Club } from '../components/ClubPicker';
 import NationPicker, { Nation } from '../components/NationPicker';
-import { downloadAsPng, downloadAsGif } from '../lib/download';
+import { downloadAsPng } from '../lib/download';
 import { isAuthenticated, updateUserProfile } from '../lib/auth';
 import { toast } from 'sonner';
 
@@ -78,7 +78,7 @@ export default function CreateCard() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [stats, setStats] = useState<Stat[]>(DEFAULT_STATS);
   const [cardTheme, setCardTheme] = useState<CardTheme>('greenOrange');
-  const [downloading, setDownloading] = useState<'png' | 'gif' | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   const t = cardThemeStyles[cardTheme];
 
@@ -106,23 +106,12 @@ export default function CreateCard() {
 
   const handleDownloadPng = async () => {
     if (!cardRef.current || downloading) return;
-    setDownloading('png');
+    setDownloading(true);
     try {
       await downloadAsPng(cardRef.current, `${name.replace(/\s+/g, '-').toLowerCase()}.png`);
       toast.success('Card saved as PNG');
-    } catch { toast.error('PNG download failed'); }
-    finally { setDownloading(null); }
-  };
-
-  const handleDownloadGif = async () => {
-    if (!cardRef.current || downloading) return;
-    setDownloading('gif');
-    toast.info('Generating spinning GIF…');
-    try {
-      await downloadAsGif(cardRef.current, `${name.replace(/\s+/g, '-').toLowerCase()}-spin.gif`);
-      toast.success('Spinning GIF saved');
-    } catch { toast.error('GIF download failed'); }
-    finally { setDownloading(null); }
+    } catch { toast.error('Download failed'); }
+    finally { setDownloading(false); }
   };
 
   const resetCard = () => {
@@ -434,24 +423,15 @@ export default function CreateCard() {
               </div>
             </section>
 
-            {/* Download actions */}
+            {/* Download action */}
             <section className="flex gap-3 pt-2">
               <Button
                 onClick={handleDownloadPng}
-                disabled={!!downloading}
+                disabled={downloading}
                 className="flex-1 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold shadow-lg"
               >
                 <Download className="w-4 h-4 mr-2" />
-                {downloading === 'png' ? 'Saving PNG…' : 'Download PNG'}
-              </Button>
-              <Button
-                onClick={handleDownloadGif}
-                disabled={!!downloading}
-                variant="outline"
-                className={`flex-1 ${cardTheme === 'whiteGold' ? '' : 'border-white/30 text-white hover:bg-white/10'}`}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                {downloading === 'gif' ? 'Generating GIF…' : 'Download Spin GIF'}
+                {downloading ? 'Saving…' : 'Download Card'}
               </Button>
             </section>
 
@@ -467,19 +447,12 @@ export default function CreateCard() {
                 attributes={cardAttributes}
                 ratings={cardRatings}
                 cardTheme={cardTheme}
-                spinning
               />
             </div>
 
             <div className={`text-center ${labelColor}`}>
               <p className="text-xs">Overall Rating</p>
               <p className={`text-4xl font-black ${cardTheme === 'whiteGold' ? 'text-amber-700' : 'text-yellow-400'}`}>{overall}</p>
-              <p className="text-[10px] mt-1 opacity-60">Hover card to pause spin</p>
-            </div>
-
-            <div className="mt-2 text-center text-xs text-white/30 max-w-[260px]">
-              <p>PNG = high-res static card</p>
-              <p>Spin GIF = animated 360° rotation</p>
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
-import { User as UserIcon, Download, ImageOff, Star } from 'lucide-react';
+import { User as UserIcon, Download, Star } from 'lucide-react';
 import { motion } from 'motion/react';
-import { downloadAsPng, downloadAsGif } from '../lib/download';
+import { downloadAsPng } from '../lib/download';
 import { toast } from 'sonner';
 
 export type CardTheme = 'greenOrange' | 'whiteGold' | 'blackPurple';
@@ -19,8 +19,6 @@ export interface CardThemeStyles {
   notRatedText: string;
   dividerColor: string;
   metaText: string;
-  backBg: string;
-  backPattern: string;
 }
 
 export const cardThemeStyles: Record<CardTheme, CardThemeStyles> = {
@@ -38,8 +36,6 @@ export const cardThemeStyles: Record<CardTheme, CardThemeStyles> = {
     notRatedText: 'text-yellow-300/60',
     dividerColor: 'border-yellow-400/40',
     metaText: 'text-yellow-200/80',
-    backBg: 'from-green-900 to-emerald-950',
-    backPattern: 'border-yellow-400/30',
   },
   whiteGold: {
     outerGradient: 'from-amber-300 via-yellow-100 to-amber-400',
@@ -54,8 +50,6 @@ export const cardThemeStyles: Record<CardTheme, CardThemeStyles> = {
     notRatedText: 'text-amber-400',
     dividerColor: 'border-amber-300',
     metaText: 'text-amber-600/80',
-    backBg: 'from-amber-50 to-amber-100',
-    backPattern: 'border-amber-300/50',
   },
   blackPurple: {
     outerGradient: 'from-purple-600 via-fuchsia-400 to-purple-700',
@@ -70,8 +64,6 @@ export const cardThemeStyles: Record<CardTheme, CardThemeStyles> = {
     notRatedText: 'text-purple-400/60',
     dividerColor: 'border-purple-500/40',
     metaText: 'text-purple-300/70',
-    backBg: 'from-gray-950 to-purple-950',
-    backPattern: 'border-purple-500/30',
   },
 };
 
@@ -119,10 +111,8 @@ interface FifaCardProps {
   ratings: { [attributeId: string]: number };
   overallRating?: number;
   cardTheme?: CardTheme;
-  /** Show PNG + GIF download buttons beneath the card */
+  /** Show the download-as-PNG button beneath the card */
   showDownload?: boolean;
-  /** Auto-spin the card continuously */
-  spinning?: boolean;
 }
 
 export default function FifaCard({
@@ -132,11 +122,9 @@ export default function FifaCard({
   overallRating,
   cardTheme = 'greenOrange',
   showDownload = false,
-  spinning = false,
 }: FifaCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [downloading, setDownloading] = useState<'png' | 'gif' | null>(null);
-  const [hovered, setHovered] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const hasRatings = Object.keys(ratings).length > 0;
   const overall =
@@ -154,28 +142,14 @@ export default function FifaCard({
 
   const handleDownloadPng = async () => {
     if (!cardRef.current || downloading) return;
-    setDownloading('png');
+    setDownloading(true);
     try {
       await downloadAsPng(cardRef.current, `${slug}.png`);
       toast.success('Card saved as PNG');
     } catch {
-      toast.error('PNG download failed');
+      toast.error('Download failed');
     } finally {
-      setDownloading(null);
-    }
-  };
-
-  const handleDownloadGif = async () => {
-    if (!cardRef.current || downloading) return;
-    setDownloading('gif');
-    toast.info('Generating spinning GIF…');
-    try {
-      await downloadAsGif(cardRef.current, `${slug}-spin.gif`);
-      toast.success('Spinning GIF saved');
-    } catch {
-      toast.error('GIF download failed');
-    } finally {
-      setDownloading(null);
+      setDownloading(false);
     }
   };
 
@@ -187,7 +161,6 @@ export default function FifaCard({
     <div
       ref={cardRef}
       className={`relative w-64 rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br ${t.innerBg} border-0`}
-      style={{ backfaceVisibility: 'hidden' }}
     >
       {/* Golden outer glow border rendered as a box-shadow */}
       <div
@@ -326,72 +299,35 @@ export default function FifaCard({
         </div>
       )}
 
-      {/* Shine overlay */}
-      <div className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden">
-        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-white/10 to-transparent transform rotate-12" />
-      </div>
-    </div>
-  );
-
-  const cardBack = (
-    <div
-      className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${t.backBg} flex items-center justify-center`}
-      style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-    >
-      <div className={`w-20 h-20 rounded-xl border-2 ${t.backPattern} opacity-40 flex items-center justify-center`}>
-        <ImageOff className={`w-8 h-8 ${t.attrNameText} opacity-60`} />
-      </div>
-      <div
-        className={`absolute inset-0 rounded-2xl pointer-events-none`}
-        style={{ boxShadow: 'inset 0 0 0 3px rgba(250,204,21,0.3)' }}
+      {/* Shine sweep — a soft diagonal highlight that loops across the card.
+          Excluded from PNG exports so it never freezes mid-sweep in the file. */}
+      <motion.div
+        aria-hidden
+        className="card-export-exclude absolute inset-y-0 w-16 pointer-events-none"
+        style={{
+          left: -96,
+          background:
+            'linear-gradient(115deg, transparent 15%, rgba(255,255,255,0.45) 50%, transparent 85%)',
+        }}
+        animate={{ x: [0, 420] }}
+        transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 2.4, ease: 'easeInOut' }}
       />
     </div>
   );
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* Perspective wrapper */}
-      <div style={{ perspective: '900px' }}>
-        <motion.div
-          onHoverStart={() => setHovered(true)}
-          onHoverEnd={() => setHovered(false)}
-          animate={
-            spinning
-              ? { rotateY: hovered ? 0 : 360 }
-              : { rotateY: 0 }
-          }
-          transition={
-            spinning
-              ? { duration: 4, repeat: hovered ? 0 : Infinity, ease: 'linear' }
-              : { duration: 0.3 }
-          }
-          style={{ transformStyle: 'preserve-3d', position: 'relative', width: 256 }}
-          className="cursor-pointer"
-        >
-          {cardFront}
-          {cardBack}
-        </motion.div>
-      </div>
+      {cardFront}
 
       {showDownload && (
-        <div className="flex gap-2">
-          <button
-            onClick={handleDownloadPng}
-            disabled={!!downloading}
-            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 disabled:opacity-40"
-          >
-            <Download className="w-3 h-3" />
-            {downloading === 'png' ? 'Saving…' : 'PNG'}
-          </button>
-          <button
-            onClick={handleDownloadGif}
-            disabled={!!downloading}
-            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 disabled:opacity-40"
-          >
-            <Download className="w-3 h-3" />
-            {downloading === 'gif' ? 'Generating…' : 'GIF Spin'}
-          </button>
-        </div>
+        <button
+          onClick={handleDownloadPng}
+          disabled={downloading}
+          className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 disabled:opacity-40"
+        >
+          <Download className="w-3 h-3" />
+          {downloading ? 'Saving…' : 'Download Card'}
+        </button>
       )}
     </div>
   );
