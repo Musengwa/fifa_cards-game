@@ -179,14 +179,20 @@ app.put("/make-server-44e0fa0c/user/profile", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const { name } = await c.req.json();
+    const body = await c.req.json();
     const profile = await kv.get(`user:${userId}`);
-    
+
     if (!profile) {
       return c.json({ error: 'Profile not found' }, 404);
     }
 
-    const updatedProfile = { ...profile, name };
+    const allowedFields = ['name', 'club', 'clubLogoUrl'] as const;
+    const updates: Record<string, unknown> = {};
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) updates[field] = body[field];
+    }
+
+    const updatedProfile = { ...profile, ...updates };
     await kv.set(`user:${userId}`, updatedProfile);
 
     return c.json({ profile: updatedProfile });

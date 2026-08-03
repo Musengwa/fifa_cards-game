@@ -8,10 +8,12 @@ import { Slider } from '../components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   ArrowLeft, Upload, Plus, Trash2, Sparkles, Palette,
-  RefreshCw, Download, Star, User as UserIcon,
+  RefreshCw, Download, Star, User as UserIcon, Shield,
 } from 'lucide-react';
 import FifaCard, { CardTheme, cardThemeStyles } from '../components/FifaCard';
+import ClubPicker, { Club } from '../components/ClubPicker';
 import { downloadAsPng, downloadAsGif } from '../lib/download';
+import { isAuthenticated, updateUserProfile } from '../lib/auth';
 import { toast } from 'sonner';
 
 interface Stat {
@@ -66,6 +68,8 @@ export default function CreateCard() {
   const [position, setPosition] = useState('ST');
   const [nationality, setNationality] = useState('');
   const [club, setClub] = useState('');
+  const [clubLogoUrl, setClubLogoUrl] = useState<string | null>(null);
+  const [clubPickerOpen, setClubPickerOpen] = useState(false);
   const [weakFoot, setWeakFoot] = useState(3);
   const [skillMoves, setSkillMoves] = useState(3);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -119,9 +123,23 @@ export default function CreateCard() {
   };
 
   const resetCard = () => {
-    setName('YOUR NAME'); setPosition('ST'); setNationality(''); setClub('');
+    setName('YOUR NAME'); setPosition('ST'); setNationality(''); setClub(''); setClubLogoUrl(null);
     setWeakFoot(3); setSkillMoves(3); setImageUrl(null); setStats(DEFAULT_STATS);
     setCardTheme('greenOrange');
+  };
+
+  const handleSelectClub = async (selected: Club) => {
+    setClub(selected.name);
+    setClubLogoUrl(selected.logoUrl);
+
+    if (isAuthenticated()) {
+      try {
+        await updateUserProfile({ club: selected.name, clubLogoUrl: selected.logoUrl });
+        toast.success(`Club set to ${selected.name}`);
+      } catch {
+        toast.error('Saved to card, but failed to update your profile');
+      }
+    }
   };
 
   const cardUser = {
@@ -295,15 +313,26 @@ export default function CreateCard() {
               </div>
               <div>
                 <Label className={`text-xs font-bold uppercase tracking-widest ${labelColor} mb-2 block`}>Club / Team</Label>
-                <Input
-                  value={club}
-                  onChange={(e) => setClub(e.target.value)}
-                  placeholder="FC Barcelona"
-                  maxLength={30}
-                  className={inputStyle}
-                />
+                <button
+                  type="button"
+                  onClick={() => setClubPickerOpen(true)}
+                  className={`w-full h-10 px-3 rounded-md border flex items-center gap-2 text-sm ${inputStyle || 'border-gray-300'}`}
+                >
+                  {clubLogoUrl ? (
+                    <img src={clubLogoUrl} alt="" aria-hidden className="w-6 h-6 object-contain shrink-0" />
+                  ) : (
+                    <Shield className="w-5 h-5 shrink-0 opacity-40" />
+                  )}
+                  <span className="truncate">{club || 'Select club…'}</span>
+                </button>
               </div>
             </section>
+
+            <ClubPicker
+              open={clubPickerOpen}
+              onOpenChange={setClubPickerOpen}
+              onSelect={handleSelectClub}
+            />
 
             {/* Weak Foot & Skill Moves */}
             <section className="grid grid-cols-2 gap-6">

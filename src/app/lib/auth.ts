@@ -1,4 +1,4 @@
-import { supabase, API_BASE_URL } from './supabase';
+import { supabase, API_BASE_URL, getAuthHeaders } from './supabase';
 
 export interface User {
   id: string;
@@ -6,6 +6,19 @@ export interface User {
   name: string;
   profilePicUrl: string | null;
 }
+
+export const updateUserProfile = async (
+  updates: Partial<{ name: string; club: string; clubLogoUrl: string }>
+) => {
+  const response = await fetch(`${API_BASE_URL}/user/profile`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(updates),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Failed to update profile');
+  return data.profile;
+};
 
 export const signUp = async (email: string, password: string, name: string) => {
   try {

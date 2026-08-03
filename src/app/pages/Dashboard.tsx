@@ -7,11 +7,12 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import {
   Plus, LogOut, Users, Calendar, User, Bell,
-  CheckCircle2, Clock, CreditCard, Check, Lock,
+  CheckCircle2, Clock, CreditCard, Check, Lock, Shield,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
-import { signOut, getSession, isAuthenticated } from '../lib/auth';
+import { signOut, getSession, isAuthenticated, updateUserProfile } from '../lib/auth';
+import ClubPicker, { Club } from '../components/ClubPicker';
 import { toast } from 'sonner';
 
 interface Group {
@@ -33,6 +34,8 @@ export default function Dashboard() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [uploadingPic, setUploadingPic] = useState(false);
+  const [clubPickerOpen, setClubPickerOpen] = useState(false);
+  const [savingClub, setSavingClub] = useState(false);
   const [pendingInviteCount, setPendingInviteCount] = useState(0);
 
   useEffect(() => {
@@ -94,6 +97,19 @@ export default function Dashboard() {
       toast.error(error.message || 'Failed to upload picture');
     } finally {
       setUploadingPic(false);
+    }
+  };
+
+  const handleSelectClub = async (selected: Club) => {
+    setSavingClub(true);
+    try {
+      await updateUserProfile({ club: selected.name, clubLogoUrl: selected.logoUrl });
+      setUserProfile((prev: any) => ({ ...prev, club: selected.name, clubLogoUrl: selected.logoUrl }));
+      toast.success(`Club set to ${selected.name}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update club');
+    } finally {
+      setSavingClub(false);
     }
   };
 
@@ -171,9 +187,33 @@ export default function Dashboard() {
                     <Input type="file" accept="image/*" onChange={handleProfilePicUpload} disabled={uploadingPic} />
                     {uploadingPic && <p className="text-sm text-gray-500">Uploading…</p>}
                   </div>
+                  <div className="space-y-2">
+                    <Label>Club</Label>
+                    <button
+                      type="button"
+                      onClick={() => setClubPickerOpen(true)}
+                      disabled={savingClub}
+                      className="w-full h-10 px-3 rounded-md border border-input flex items-center gap-2 text-sm disabled:opacity-60"
+                    >
+                      {userProfile?.clubLogoUrl ? (
+                        <img src={userProfile.clubLogoUrl} alt="" aria-hidden className="w-6 h-6 object-contain shrink-0" />
+                      ) : (
+                        <Shield className="w-5 h-5 shrink-0 opacity-40" />
+                      )}
+                      <span className="truncate">
+                        {savingClub ? 'Saving…' : userProfile?.club || 'Select club…'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
+
+            <ClubPicker
+              open={clubPickerOpen}
+              onOpenChange={setClubPickerOpen}
+              onSelect={handleSelectClub}
+            />
 
             {/* Create Card — full page */}
             <Button
