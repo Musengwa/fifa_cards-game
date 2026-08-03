@@ -96,8 +96,12 @@ export interface FifaCardData {
   position?: string;
   /** Country / nationality */
   nationality?: string;
+  /** Flag icon URL for the nationality */
+  nationalityFlagUrl?: string | null;
   /** Club or team name */
   club?: string;
+  /** Badge icon URL for the club */
+  clubLogoUrl?: string | null;
   /** Weak foot rating 1-5 */
   weakFoot?: number;
   /** Skill moves rating 1-5 */
@@ -205,9 +209,20 @@ export default function FifaCard({
             </span>
           )}
           {user.nationality && (
-            <span className={`text-[9px] ${t.metaText} mt-1 font-semibold uppercase tracking-wider text-center`}>
-              {user.nationality}
-            </span>
+            <div className="flex items-center gap-1 mt-1">
+              {user.nationalityFlagUrl && (
+                <img
+                  src={user.nationalityFlagUrl}
+                  alt=""
+                  aria-hidden
+                  className="w-4 h-3 object-cover rounded-[1px] shrink-0"
+                  crossOrigin="anonymous"
+                />
+              )}
+              <span className={`text-[9px] ${t.metaText} font-semibold uppercase tracking-wider text-center`}>
+                {user.nationality}
+              </span>
+            </div>
           )}
         </div>
 
@@ -238,9 +253,20 @@ export default function FifaCard({
           {user.name}
         </h3>
         {user.club && (
-          <p className={`text-[10px] font-semibold uppercase tracking-wider ${t.metaText} mt-0.5`}>
-            {user.club}
-          </p>
+          <div className="flex items-center justify-center gap-1 mt-0.5">
+            {user.clubLogoUrl && (
+              <img
+                src={user.clubLogoUrl}
+                alt=""
+                aria-hidden
+                className="w-3.5 h-3.5 object-contain shrink-0"
+                crossOrigin="anonymous"
+              />
+            )}
+            <p className={`text-[10px] font-semibold uppercase tracking-wider ${t.metaText}`}>
+              {user.club}
+            </p>
+          </div>
         )}
       </div>
 

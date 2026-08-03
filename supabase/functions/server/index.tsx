@@ -186,7 +186,7 @@ app.put("/make-server-44e0fa0c/user/profile", async (c) => {
       return c.json({ error: 'Profile not found' }, 404);
     }
 
-    const allowedFields = ['name', 'club', 'clubLogoUrl'] as const;
+    const allowedFields = ['name', 'club', 'clubLogoUrl', 'nationality', 'nationalityFlagUrl'] as const;
     const updates: Record<string, unknown> = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) updates[field] = body[field];

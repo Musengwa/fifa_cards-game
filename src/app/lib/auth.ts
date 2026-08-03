@@ -8,7 +8,13 @@ export interface User {
 }
 
 export const updateUserProfile = async (
-  updates: Partial<{ name: string; club: string; clubLogoUrl: string }>
+  updates: Partial<{
+    name: string;
+    club: string;
+    clubLogoUrl: string;
+    nationality: string;
+    nationalityFlagUrl: string;
+  }>
 ) => {
   const response = await fetch(`${API_BASE_URL}/user/profile`, {
     method: 'PUT',

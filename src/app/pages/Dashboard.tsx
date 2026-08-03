@@ -7,12 +7,13 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import {
   Plus, LogOut, Users, Calendar, User, Bell,
-  CheckCircle2, Clock, CreditCard, Check, Lock, Shield,
+  CheckCircle2, Clock, CreditCard, Check, Lock, Shield, Globe2,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { signOut, getSession, isAuthenticated, updateUserProfile } from '../lib/auth';
 import ClubPicker, { Club } from '../components/ClubPicker';
+import NationPicker, { Nation } from '../components/NationPicker';
 import { toast } from 'sonner';
 
 interface Group {
@@ -36,6 +37,8 @@ export default function Dashboard() {
   const [uploadingPic, setUploadingPic] = useState(false);
   const [clubPickerOpen, setClubPickerOpen] = useState(false);
   const [savingClub, setSavingClub] = useState(false);
+  const [nationPickerOpen, setNationPickerOpen] = useState(false);
+  const [savingNation, setSavingNation] = useState(false);
   const [pendingInviteCount, setPendingInviteCount] = useState(0);
 
   useEffect(() => {
@@ -103,13 +106,26 @@ export default function Dashboard() {
   const handleSelectClub = async (selected: Club) => {
     setSavingClub(true);
     try {
-      await updateUserProfile({ club: selected.name, clubLogoUrl: selected.logoUrl });
-      setUserProfile((prev: any) => ({ ...prev, club: selected.name, clubLogoUrl: selected.logoUrl }));
+      await updateUserProfile({ club: selected.name, clubLogoUrl: selected.iconUrl });
+      setUserProfile((prev: any) => ({ ...prev, club: selected.name, clubLogoUrl: selected.iconUrl }));
       toast.success(`Club set to ${selected.name}`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to update club');
     } finally {
       setSavingClub(false);
+    }
+  };
+
+  const handleSelectNation = async (selected: Nation) => {
+    setSavingNation(true);
+    try {
+      await updateUserProfile({ nationality: selected.name, nationalityFlagUrl: selected.iconUrl });
+      setUserProfile((prev: any) => ({ ...prev, nationality: selected.name, nationalityFlagUrl: selected.iconUrl }));
+      toast.success(`Nationality set to ${selected.name}`);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update nationality');
+    } finally {
+      setSavingNation(false);
     }
   };
 
@@ -205,6 +221,24 @@ export default function Dashboard() {
                       </span>
                     </button>
                   </div>
+                  <div className="space-y-2">
+                    <Label>Nationality</Label>
+                    <button
+                      type="button"
+                      onClick={() => setNationPickerOpen(true)}
+                      disabled={savingNation}
+                      className="w-full h-10 px-3 rounded-md border border-input flex items-center gap-2 text-sm disabled:opacity-60"
+                    >
+                      {userProfile?.nationalityFlagUrl ? (
+                        <img src={userProfile.nationalityFlagUrl} alt="" aria-hidden className="w-6 h-4 object-cover rounded-[1px] shrink-0" />
+                      ) : (
+                        <Globe2 className="w-5 h-5 shrink-0 opacity-40" />
+                      )}
+                      <span className="truncate">
+                        {savingNation ? 'Saving…' : userProfile?.nationality || 'Select nationality…'}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
@@ -213,6 +247,11 @@ export default function Dashboard() {
               open={clubPickerOpen}
               onOpenChange={setClubPickerOpen}
               onSelect={handleSelectClub}
+            />
+            <NationPicker
+              open={nationPickerOpen}
+              onOpenChange={setNationPickerOpen}
+              onSelect={handleSelectNation}
             />
 
             {/* Create Card — full page */}

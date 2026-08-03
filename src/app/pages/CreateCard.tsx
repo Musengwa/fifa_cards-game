@@ -8,10 +8,11 @@ import { Slider } from '../components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import {
   ArrowLeft, Upload, Plus, Trash2, Sparkles, Palette,
-  RefreshCw, Download, Star, User as UserIcon, Shield,
+  RefreshCw, Download, Star, User as UserIcon, Shield, Globe2,
 } from 'lucide-react';
 import FifaCard, { CardTheme, cardThemeStyles } from '../components/FifaCard';
 import ClubPicker, { Club } from '../components/ClubPicker';
+import NationPicker, { Nation } from '../components/NationPicker';
 import { downloadAsPng, downloadAsGif } from '../lib/download';
 import { isAuthenticated, updateUserProfile } from '../lib/auth';
 import { toast } from 'sonner';
@@ -67,6 +68,8 @@ export default function CreateCard() {
   const [name, setName] = useState('YOUR NAME');
   const [position, setPosition] = useState('ST');
   const [nationality, setNationality] = useState('');
+  const [nationalityFlagUrl, setNationalityFlagUrl] = useState<string | null>(null);
+  const [nationPickerOpen, setNationPickerOpen] = useState(false);
   const [club, setClub] = useState('');
   const [clubLogoUrl, setClubLogoUrl] = useState<string | null>(null);
   const [clubPickerOpen, setClubPickerOpen] = useState(false);
@@ -123,19 +126,35 @@ export default function CreateCard() {
   };
 
   const resetCard = () => {
-    setName('YOUR NAME'); setPosition('ST'); setNationality(''); setClub(''); setClubLogoUrl(null);
+    setName('YOUR NAME'); setPosition('ST');
+    setNationality(''); setNationalityFlagUrl(null);
+    setClub(''); setClubLogoUrl(null);
     setWeakFoot(3); setSkillMoves(3); setImageUrl(null); setStats(DEFAULT_STATS);
     setCardTheme('greenOrange');
   };
 
   const handleSelectClub = async (selected: Club) => {
     setClub(selected.name);
-    setClubLogoUrl(selected.logoUrl);
+    setClubLogoUrl(selected.iconUrl);
 
     if (isAuthenticated()) {
       try {
-        await updateUserProfile({ club: selected.name, clubLogoUrl: selected.logoUrl });
+        await updateUserProfile({ club: selected.name, clubLogoUrl: selected.iconUrl });
         toast.success(`Club set to ${selected.name}`);
+      } catch {
+        toast.error('Saved to card, but failed to update your profile');
+      }
+    }
+  };
+
+  const handleSelectNation = async (selected: Nation) => {
+    setNationality(selected.name.toUpperCase());
+    setNationalityFlagUrl(selected.iconUrl);
+
+    if (isAuthenticated()) {
+      try {
+        await updateUserProfile({ nationality: selected.name, nationalityFlagUrl: selected.iconUrl });
+        toast.success(`Nationality set to ${selected.name}`);
       } catch {
         toast.error('Saved to card, but failed to update your profile');
       }
@@ -148,7 +167,9 @@ export default function CreateCard() {
     profilePicUrl: imageUrl,
     position,
     nationality,
+    nationalityFlagUrl,
     club,
+    clubLogoUrl,
     weakFoot,
     skillMoves,
   };
@@ -303,13 +324,18 @@ export default function CreateCard() {
             <section className="grid grid-cols-2 gap-4">
               <div>
                 <Label className={`text-xs font-bold uppercase tracking-widest ${labelColor} mb-2 block`}>Nationality</Label>
-                <Input
-                  value={nationality}
-                  onChange={(e) => setNationality(e.target.value.toUpperCase())}
-                  placeholder="ENG"
-                  maxLength={30}
-                  className={inputStyle}
-                />
+                <button
+                  type="button"
+                  onClick={() => setNationPickerOpen(true)}
+                  className={`w-full h-10 px-3 rounded-md border flex items-center gap-2 text-sm ${inputStyle || 'border-gray-300'}`}
+                >
+                  {nationalityFlagUrl ? (
+                    <img src={nationalityFlagUrl} alt="" aria-hidden className="w-6 h-4 object-cover rounded-[1px] shrink-0" />
+                  ) : (
+                    <Globe2 className="w-5 h-5 shrink-0 opacity-40" />
+                  )}
+                  <span className="truncate">{nationality || 'Select nationality…'}</span>
+                </button>
               </div>
               <div>
                 <Label className={`text-xs font-bold uppercase tracking-widest ${labelColor} mb-2 block`}>Club / Team</Label>
@@ -332,6 +358,11 @@ export default function CreateCard() {
               open={clubPickerOpen}
               onOpenChange={setClubPickerOpen}
               onSelect={handleSelectClub}
+            />
+            <NationPicker
+              open={nationPickerOpen}
+              onOpenChange={setNationPickerOpen}
+              onSelect={handleSelectNation}
             />
 
             {/* Weak Foot & Skill Moves */}
