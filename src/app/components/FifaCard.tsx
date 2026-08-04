@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { User as UserIcon, Download, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { downloadAsPng } from '../lib/download';
+import { StarRatingDisplay } from './StarRating';
 import { toast } from 'sonner';
 
 export type CardTheme = 'greenOrange' | 'whiteGold' | 'blackPurple';
@@ -100,6 +101,12 @@ export interface FifaCardData {
   skillMoves?: number;
 }
 
+export interface PeerRating {
+  /** 0-5 in half-star steps: percentage of total possible stars voters gave, mapped back to a 5-star scale */
+  average: number;
+  count: number;
+}
+
 interface Attribute {
   id: string;
   name: string;
@@ -111,6 +118,8 @@ interface FifaCardProps {
   ratings: { [attributeId: string]: number };
   overallRating?: number;
   cardTheme?: CardTheme;
+  /** Community star rating from the group's rate game, if any */
+  peerRating?: PeerRating | null;
   /** Show the download-as-PNG button beneath the card */
   showDownload?: boolean;
 }
@@ -121,6 +130,7 @@ export default function FifaCard({
   ratings,
   overallRating,
   cardTheme = 'greenOrange',
+  peerRating,
   showDownload = false,
 }: FifaCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -239,6 +249,14 @@ export default function FifaCard({
             <p className={`text-[10px] font-semibold uppercase tracking-wider ${t.metaText}`}>
               {user.club}
             </p>
+          </div>
+        )}
+        {peerRating && peerRating.count > 0 && (
+          <div className="flex items-center justify-center gap-1.5 mt-1">
+            <StarRatingDisplay value={peerRating.average} size={11} />
+            <span className={`text-[9px] font-semibold ${t.metaText}`}>
+              ({peerRating.count})
+            </span>
           </div>
         )}
       </div>

@@ -571,10 +571,14 @@ app.post("/make-server-44e0fa0c/rating/submit", async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    const { groupId, toUserId, ratings } = await c.req.json();
-    
+    const { groupId, toUserId, ratings, stars } = await c.req.json();
+
     if (!groupId || !toUserId || !ratings) {
       return c.json({ error: 'Group ID, target user ID, and ratings are required' }, 400);
+    }
+
+    if (stars !== undefined && (typeof stars !== 'number' || stars < 0 || stars > 5 || (stars * 2) % 1 !== 0)) {
+      return c.json({ error: 'Stars must be a number 0-5 in half-star increments' }, 400);
     }
 
     // Prevent self-rating
@@ -601,6 +605,7 @@ app.post("/make-server-44e0fa0c/rating/submit", async (c) => {
       fromUserId: userId,
       toUserId,
       ratings, // { attributeId: value }
+      stars: typeof stars === 'number' ? stars : undefined, // 0-5 in 0.5 steps, overall peer star rating
       timestamp: new Date().toISOString()
     };
 
@@ -641,18 +646,24 @@ app.get("/make-server-44e0fa0c/group/:groupId/ratings", async (c) => {
 
     // Calculate average ratings for each user
     const userRatings: any = {};
-    
+    const userStars: any = {};
+
     allRatings.forEach((rating: any) => {
       if (!userRatings[rating.toUserId]) {
         userRatings[rating.toUserId] = {};
       }
-      
+
       Object.entries(rating.ratings).forEach(([attrId, value]: [string, any]) => {
         if (!userRatings[rating.toUserId][attrId]) {
           userRatings[rating.toUserId][attrId] = [];
         }
         userRatings[rating.toUserId][attrId].push(value);
       });
+
+      if (typeof rating.stars === 'number') {
+        if (!userStars[rating.toUserId]) userStars[rating.toUserId] = [];
+        userStars[rating.toUserId].push(rating.stars);
+      }
     });
 
     // Calculate averages
@@ -665,7 +676,18 @@ app.get("/make-server-44e0fa0c/group/:groupId/ratings", async (c) => {
       });
     });
 
-    return c.json({ ratings: allRatings, averages });
+    // Star rating: the percentage of total possible stars (5 per voter) actually
+    // given, mapped back onto a 5-star scale and rounded to the nearest half star.
+    const starRatings: any = {};
+    Object.entries(userStars).forEach(([toUserId, values]: [string, any]) => {
+      const totalGiven = values.reduce((a: number, b: number) => a + b, 0);
+      const totalPossible = values.length * 5;
+      const percentage = totalPossible > 0 ? totalGiven / totalPossible : 0;
+      const average = Math.round(percentage * 5 * 2) / 2;
+      starRatings[toUserId] = { average, percentage, count: values.length };
+    });
+
+    return c.json({ ratings: allRatings, averages, starRatings });
   } catch (error) {
     console.error('Error fetching ratings:', error);
     return c.json({ error: 'Failed to fetch ratings' }, 500);

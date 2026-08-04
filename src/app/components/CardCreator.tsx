@@ -26,7 +26,7 @@ const DEFAULT_STATS: Stat[] = [
 ];
 
 const THEME_OPTIONS: { key: CardTheme; label: string; preview: string }[] = [
-  { key: 'greenOrange', label: 'Green & Orange', preview: 'from-green-600 to-orange-500' },
+  { key: 'greenOrange', label: 'Yellow & Green', preview: 'from-yellow-400 from-50% to-green-700 to-50%' },
   { key: 'whiteGold', label: 'White & Gold', preview: 'from-amber-300 to-yellow-200' },
   { key: 'blackPurple', label: 'Black & Purple', preview: 'from-purple-700 to-fuchsia-500' },
 ];
@@ -302,7 +302,7 @@ export default function CardCreator({ open, onOpenChange }: CardCreatorProps) {
           <div
             className={`lg:w-80 flex flex-col items-center justify-center p-6 sm:p-8 bg-gradient-to-br ${
               cardTheme === 'greenOrange'
-                ? 'from-green-900 to-orange-900'
+                ? 'from-green-950 to-emerald-900'
                 : cardTheme === 'whiteGold'
                 ? 'from-amber-100 to-amber-200'
                 : 'from-black to-purple-950'

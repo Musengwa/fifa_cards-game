@@ -16,6 +16,7 @@ interface ShowroomProps {
   members: Member[];
   attributes: Array<{ id: string; name: string }>;
   ratings: any;
+  starRatings?: any;
   votes: any;
   awardCategories: Array<{ id: string; name: string }>;
 }
@@ -39,17 +40,17 @@ const themes: Record<
   }
 > = {
   greenOrange: {
-    name: 'Green & Orange',
+    name: 'Yellow & Green',
     cardTheme: 'greenOrange',
-    bgGradient: 'from-emerald-900 via-green-800 to-orange-900',
+    bgGradient: 'from-green-950 via-emerald-900 to-green-950',
     textPrimary: 'text-white',
-    textAccent: 'text-orange-400',
+    textAccent: 'text-yellow-400',
     textSecondary: 'text-green-200',
-    cardBorder: 'border-orange-500/40',
+    cardBorder: 'border-yellow-500/40',
     headerGlow: 'shadow-green-500/30',
-    accentBg: 'bg-orange-500',
-    btnActive: 'bg-gradient-to-r from-green-600 to-orange-600',
-    spotlightRing: 'ring-orange-400',
+    accentBg: 'bg-yellow-500',
+    btnActive: 'bg-yellow-500',
+    spotlightRing: 'ring-yellow-400',
   },
   whiteGold: {
     name: 'White & Gold',
@@ -79,7 +80,7 @@ const themes: Record<
   },
 };
 
-export default function Showroom({ members, attributes, ratings, votes, awardCategories }: ShowroomProps) {
+export default function Showroom({ members, attributes, ratings, starRatings = {}, votes, awardCategories }: ShowroomProps) {
   const [theme, setTheme] = useState<Theme>('greenOrange');
   const [downloading, setDownloading] = useState(false);
   const showroomRef = useRef<HTMLDivElement>(null);
@@ -190,6 +191,7 @@ export default function Showroom({ members, attributes, ratings, votes, awardCat
                   user={membersWithStats[1]}
                   attributes={attributes}
                   ratings={ratings[membersWithStats[1].id] || {}}
+                  peerRating={starRatings[membersWithStats[1].id] || null}
                   cardTheme={t.cardTheme}
                   showDownload
                 />
@@ -215,6 +217,7 @@ export default function Showroom({ members, attributes, ratings, votes, awardCat
                     user={membersWithStats[0]}
                     attributes={attributes}
                     ratings={ratings[membersWithStats[0].id] || {}}
+                    peerRating={starRatings[membersWithStats[0].id] || null}
                     cardTheme={t.cardTheme}
                     showDownload
                   />
@@ -235,6 +238,7 @@ export default function Showroom({ members, attributes, ratings, votes, awardCat
                   user={membersWithStats[2]}
                   attributes={attributes}
                   ratings={ratings[membersWithStats[2].id] || {}}
+                  peerRating={starRatings[membersWithStats[2].id] || null}
                   cardTheme={t.cardTheme}
                   showDownload
                 />
@@ -263,6 +267,7 @@ export default function Showroom({ members, attributes, ratings, votes, awardCat
                   user={member}
                   attributes={attributes}
                   ratings={ratings[member.id] || {}}
+                  peerRating={starRatings[member.id] || null}
                   cardTheme={t.cardTheme}
                   showDownload
                 />

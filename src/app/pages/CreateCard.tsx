@@ -39,7 +39,7 @@ const POSITIONS = [
 ];
 
 const THEME_OPTIONS: { key: CardTheme; label: string; preview: string }[] = [
-  { key: 'greenOrange', label: 'Green & Gold', preview: 'from-yellow-400 to-green-700' },
+  { key: 'greenOrange', label: 'Yellow & Green', preview: 'from-yellow-400 from-50% to-green-700 to-50%' },
   { key: 'whiteGold', label: 'White & Gold', preview: 'from-amber-300 to-yellow-100' },
   { key: 'blackPurple', label: 'Black & Purple', preview: 'from-purple-700 to-fuchsia-400' },
 ];

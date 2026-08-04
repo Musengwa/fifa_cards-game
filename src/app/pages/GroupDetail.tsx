@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import FifaCard from '../components/FifaCard';
 import Showroom from '../components/Showroom';
 import TrophyRoomCinematic from '../components/TrophyRoomCinematic';
+import { StarRatingInput } from '../components/StarRating';
 
 interface Group {
   id: string;
@@ -45,6 +46,7 @@ export default function GroupDetail() {
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [ratings, setRatings] = useState<any>({});
+  const [starRatings, setStarRatings] = useState<any>({});
   const [myRatings, setMyRatings] = useState<any[]>([]);
   const [votes, setVotes] = useState<any>({});
   const [myVote, setMyVote] = useState<any>(null);
@@ -55,6 +57,7 @@ export default function GroupDetail() {
   const [voteDialogOpen, setVoteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Member | null>(null);
   const [ratingValues, setRatingValues] = useState<{ [key: string]: number }>({});
+  const [overallStars, setOverallStars] = useState(0);
   const [voteSelections, setVoteSelections] = useState<{ [key: string]: string }>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -106,6 +109,7 @@ export default function GroupDetail() {
       const ratingsData = await ratingsRes.json();
       if (ratingsRes.ok) {
         setRatings(ratingsData.averages || {});
+        setStarRatings(ratingsData.starRatings || {});
       }
 
       // Load my ratings
@@ -251,6 +255,7 @@ export default function GroupDetail() {
     const existingRating = myRatings.find(r => r.toUserId === member.id);
     if (existingRating) {
       setRatingValues(existingRating.ratings);
+      setOverallStars(existingRating.stars || 0);
     } else {
       // Initialize with 50
       const initial: any = {};
@@ -258,13 +263,19 @@ export default function GroupDetail() {
         initial[attr.id] = 50;
       });
       setRatingValues(initial);
+      setOverallStars(0);
     }
-    
+
     setRateDialogOpen(true);
   };
 
   const handleSubmitRating = async () => {
     if (!selectedUser) return;
+
+    if (overallStars <= 0) {
+      toast.error('Give an overall star rating first');
+      return;
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/rating/submit`, {
@@ -274,6 +285,7 @@ export default function GroupDetail() {
           groupId,
           toUserId: selectedUser.id,
           ratings: ratingValues,
+          stars: overallStars,
         }),
       });
 
@@ -412,9 +424,9 @@ export default function GroupDetail() {
   // POST-SESSION MODE: Show completely different UI with Showroom, Trophy Room, and Analysis
   if (group.sessionEnded) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="min-h-screen bg-slate-950">
         {/* Post-Session Header */}
-        <div className="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
+        <div className="bg-black/40 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 sm:gap-4">
@@ -431,7 +443,7 @@ export default function GroupDetail() {
                     <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
                     {group.name}
                   </h1>
-                  <p className="text-xs sm:text-sm text-purple-200">Session Ended • Results Showcase</p>
+                  <p className="text-xs sm:text-sm text-slate-300">Session Ended • Results Showcase</p>
                 </div>
               </div>
             </div>
@@ -444,7 +456,7 @@ export default function GroupDetail() {
                 className={`flex-1 sm:flex-none ${
                   postSessionTab === 'showroom'
                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                    : 'text-purple-200 hover:bg-white/10'
+                    : 'text-slate-300 hover:bg-white/10'
                 }`}
               >
                 <Users className="w-4 h-4 mr-2" />
@@ -456,7 +468,7 @@ export default function GroupDetail() {
                 className={`flex-1 sm:flex-none ${
                   postSessionTab === 'trophies'
                     ? 'bg-gradient-to-r from-yellow-600 to-amber-600 text-white'
-                    : 'text-purple-200 hover:bg-white/10'
+                    : 'text-slate-300 hover:bg-white/10'
                 }`}
               >
                 <Trophy className="w-4 h-4 mr-2" />
@@ -468,7 +480,7 @@ export default function GroupDetail() {
                 className={`flex-1 sm:flex-none ${
                   postSessionTab === 'analytics'
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
-                    : 'text-purple-200 hover:bg-white/10'
+                    : 'text-slate-300 hover:bg-white/10'
                 }`}
               >
                 <BarChart3 className="w-4 h-4 mr-2" />
@@ -485,6 +497,7 @@ export default function GroupDetail() {
               members={members}
               attributes={group.attributes}
               ratings={ratings}
+              starRatings={starRatings}
               votes={votes}
               awardCategories={group.awardCategories}
             />
@@ -839,6 +852,7 @@ export default function GroupDetail() {
                     user={member}
                     attributes={group.attributes}
                     ratings={ratings[member.id] || {}}
+                    peerRating={starRatings[member.id] || null}
                     showDownload
                   />
                 ))}
@@ -911,10 +925,17 @@ export default function GroupDetail() {
                 <DialogHeader>
                   <DialogTitle>Rate {selectedUser?.name}</DialogTitle>
                   <DialogDescription>
-                    Rate from 0 to 100 for each attribute
+                    Give an overall star rating, then rate from 0 to 100 for each attribute
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6">
+                  <div className="space-y-2 flex flex-col items-center">
+                    <Label>Overall Star Rating</Label>
+                    <StarRatingInput value={overallStars} onChange={setOverallStars} />
+                    <span className="text-sm text-gray-500">
+                      {overallStars > 0 ? `${overallStars} / 5 stars` : 'Tap a star to rate'}
+                    </span>
+                  </div>
                   {group.attributes.map((attr) => (
                     <div key={attr.id} className="space-y-2">
                       <div className="flex justify-between">
