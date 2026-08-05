@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Trophy, Users, Award, TrendingUp } from 'lucide-react';
 import { signIn, signUp, getSession } from '../lib/auth';
+import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 
 export default function LandingPage() {
@@ -90,11 +91,7 @@ export default function LandingPage() {
   };
 
   if (checkingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

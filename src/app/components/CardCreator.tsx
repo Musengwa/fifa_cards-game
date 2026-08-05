@@ -63,8 +63,8 @@ export default function CardCreator({ open, onOpenChange }: CardCreatorProps) {
   };
 
   const addStat = () => {
-    if (stats.length >= 8) {
-      toast.info('Max 8 stats');
+    if (stats.length >= 6) {
+      toast.info('Max 6 stats');
       return;
     }
     setStats((prev) => [

@@ -62,6 +62,20 @@ export const signUp = async (email: string, password: string, name: string) => {
       console.log('Server returned session, storing tokens...');
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user_id', data.user.id);
+
+      // The signup response comes from the server's own Supabase client, so the
+      // browser SDK doesn't know a session exists yet. Without this, getSession()
+      // returns null right after signup and bounces the user back to '/' in a loop.
+      if (data.session?.refresh_token) {
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+        if (setSessionError) {
+          console.error('Failed to hydrate SDK session after signup:', setSessionError);
+        }
+      }
+
       console.log('Stored auth tokens for user:', data.user.id);
       return data;
     }

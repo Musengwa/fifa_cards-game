@@ -18,6 +18,7 @@ import FifaCard from '../components/FifaCard';
 import Showroom from '../components/Showroom';
 import TrophyRoomCinematic from '../components/TrophyRoomCinematic';
 import { StarRatingInput } from '../components/StarRating';
+import PageLoader from '../components/PageLoader';
 
 interface Group {
   id: string;
@@ -402,11 +403,7 @@ export default function GroupDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!group) {
@@ -653,7 +650,6 @@ export default function GroupDetail() {
                                 )}
                                 <div>
                                   <p className="font-medium">{user.name}</p>
-                                  <p className="text-sm text-gray-500">{user.email}</p>
                                 </div>
                               </div>
                               <Button
@@ -899,7 +895,6 @@ export default function GroupDetail() {
                           <div className="flex justify-between items-center gap-2">
                             <div className="min-w-0 flex-1">
                               <h3 className="font-semibold text-sm sm:text-base truncate">{member.name}</h3>
-                              <p className="text-xs sm:text-sm text-gray-500 truncate">{member.email}</p>
                             </div>
                             <Button
                               onClick={() => openRateDialog(member)}

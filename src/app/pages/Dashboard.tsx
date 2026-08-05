@@ -14,6 +14,7 @@ import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { signOut, getSession, isAuthenticated, updateUserProfile } from '../lib/auth';
 import ClubPicker, { Club } from '../components/ClubPicker';
 import NationPicker, { Nation } from '../components/NationPicker';
+import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 
 interface Group {
@@ -40,32 +41,46 @@ export default function Dashboard() {
   const [nationPickerOpen, setNationPickerOpen] = useState(false);
   const [savingNation, setSavingNation] = useState(false);
   const [pendingInviteCount, setPendingInviteCount] = useState(0);
+  const [nameInput, setNameInput] = useState('');
+  const [savingName, setSavingName] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) { navigate('/'); return; }
     loadData();
   }, []);
 
+  useEffect(() => {
+    setNameInput(userProfile?.name || '');
+  }, [userProfile?.name]);
+
   const loadData = async () => {
     try {
-      const session = await getSession();
-      if (!session) { navigate('/'); return; }
+      // Refreshes the token in localStorage if it's stale; a truly invalid/missing
+      // token is caught by the 401 check below, not here — getSession() can return
+      // null right after signup even though the token is valid, which previously
+      // sent users straight back to '/' and into a redirect loop with the landing page.
+      await getSession();
 
-      const profileRes = await fetch(`${API_BASE_URL}/user/profile`, { headers: getAuthHeaders() });
+      // Fire all three requests concurrently instead of waterfalling them —
+      // sequential awaits here were what made the loading screen drag out.
+      const [profileRes, groupsRes, invitesRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/user/profile`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE_URL}/user/groups`, { headers: getAuthHeaders() }),
+        fetch(`${API_BASE_URL}/invite/pending`, { headers: getAuthHeaders() }).catch(() => null),
+      ]);
+
       if (profileRes.status === 401) { navigate('/'); return; }
       const profileData = await profileRes.json();
       if (profileRes.ok) setUserProfile(profileData.profile);
 
-      const groupsRes = await fetch(`${API_BASE_URL}/user/groups`, { headers: getAuthHeaders() });
       const groupsData = await groupsRes.json();
       if (groupsRes.ok) setGroups(groupsData.groups || []);
       else toast.error('Failed to load groups');
 
-      try {
-        const invitesRes = await fetch(`${API_BASE_URL}/invite/pending`, { headers: getAuthHeaders() });
+      if (invitesRes) {
         const invitesData = await invitesRes.json();
         if (invitesRes.ok) setPendingInviteCount(invitesData.invites?.length || 0);
-      } catch { /* non-fatal */ }
+      }
     } catch {
       toast.error('Failed to load data');
     } finally {
@@ -103,6 +118,25 @@ export default function Dashboard() {
     }
   };
 
+  const handleNameBlur = async () => {
+    const trimmed = nameInput.trim();
+    if (!trimmed || trimmed === userProfile?.name) {
+      setNameInput(userProfile?.name || '');
+      return;
+    }
+    setSavingName(true);
+    try {
+      await updateUserProfile({ name: trimmed });
+      setUserProfile((prev: any) => ({ ...prev, name: trimmed }));
+      toast.success('Name updated');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update name');
+      setNameInput(userProfile?.name || '');
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   const handleSelectClub = async (selected: Club) => {
     setSavingClub(true);
     try {
@@ -130,11 +164,7 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading…</div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
@@ -193,10 +223,17 @@ export default function Dashboard() {
                         <User className="w-16 h-16 text-gray-600" />
                       </div>
                     )}
-                    <div className="text-center">
-                      <h3 className="font-semibold text-lg">{userProfile?.name}</h3>
-                      <p className="text-gray-500 text-sm">{userProfile?.email}</p>
-                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      onBlur={handleNameBlur}
+                      disabled={savingName}
+                      placeholder="Your name"
+                      maxLength={50}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Upload Profile Picture</Label>

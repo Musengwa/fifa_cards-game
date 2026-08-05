@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Users, Calendar, Image as ImageIcon } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { isAuthenticated } from '../lib/auth';
+import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 
 export default function JoinGroup() {
@@ -82,11 +83,7 @@ export default function JoinGroup() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

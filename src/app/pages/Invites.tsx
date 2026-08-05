@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { ArrowLeft, Check, X, Users, Mail } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { isAuthenticated } from '../lib/auth';
+import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 
 interface Invite {
@@ -115,11 +116,7 @@ export default function Invites() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (

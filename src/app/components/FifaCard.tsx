@@ -1,9 +1,12 @@
 import { useRef, useState } from 'react';
-import { User as UserIcon, Download, Star } from 'lucide-react';
+import { User as UserIcon, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 import { downloadAsPng } from '../lib/download';
 import { StarRatingDisplay } from './StarRating';
 import { toast } from 'sonner';
+import greenShieldBg from './card-images/green.png';
+import purpleShieldBg from './card-images/Clipped_image_20260805_155650.png';
+import goldShieldBg from './card-images/Clipped_image_20260805_180319.png';
 
 export type CardTheme = 'greenOrange' | 'whiteGold' | 'blackPurple';
 
@@ -68,18 +71,75 @@ export const cardThemeStyles: Record<CardTheme, CardThemeStyles> = {
   },
 };
 
-function StarRating({ value, color }: { value: number; color: string }) {
-  return (
-    <div className="flex gap-0.5">
-      {Array.from({ length: 5 }, (_, i) => (
-        <Star
-          key={i}
-          className={`w-2.5 h-2.5 ${i < value ? color + ' fill-current' : 'text-current opacity-20'}`}
-        />
-      ))}
-    </div>
-  );
+// Every theme is text overlaid on a pre-designed shield graphic. 'sideBadges' stacks
+// the flag/club badge under the OVR block with a two-column stat grid (purple & gold
+// reference cards); 'bottomBadges' runs stats in a single row with the flag/club
+// centered beneath, mirroring the green & yellow reference card.
+type ShieldLayout = 'sideBadges' | 'bottomBadges';
+
+interface ShieldTheme {
+  bg: string;
+  aspectRatio: string;
+  layout: ShieldLayout;
+  ovr: string;
+  pos: string;
+  name: string;
+  statValue: string;
+  statLabel: string;
+  divider: string;
+  notRated: string;
+  shadow: string;
+  placeholderIcon: string;
+  shine: string;
 }
+
+const SHIELD_THEMES: Record<CardTheme, ShieldTheme> = {
+  greenOrange: {
+    bg: greenShieldBg,
+    aspectRatio: '955 / 1374',
+    layout: 'bottomBadges',
+    ovr: 'text-white',
+    pos: 'text-yellow-300',
+    name: 'text-white',
+    statValue: 'text-white',
+    statLabel: 'text-yellow-300/90',
+    divider: '',
+    notRated: 'text-yellow-200/50',
+    shadow: 'drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]',
+    placeholderIcon: 'text-white/20',
+    shine: 'rgba(255,255,255,0.45)',
+  },
+  whiteGold: {
+    bg: goldShieldBg,
+    aspectRatio: '1022 / 1517',
+    layout: 'sideBadges',
+    ovr: 'text-amber-700',
+    pos: 'text-amber-700/90',
+    name: 'text-gray-900',
+    statValue: 'text-gray-900',
+    statLabel: 'text-amber-700/90',
+    divider: 'divide-amber-600/30',
+    notRated: 'text-amber-600/60',
+    shadow: 'drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]',
+    placeholderIcon: 'text-gray-400/40',
+    shine: 'rgba(255,215,130,0.55)',
+  },
+  blackPurple: {
+    bg: purpleShieldBg,
+    aspectRatio: '741 / 1186',
+    layout: 'sideBadges',
+    ovr: 'text-fuchsia-100',
+    pos: 'text-fuchsia-200/90',
+    name: 'text-white',
+    statValue: 'text-fuchsia-100',
+    statLabel: 'text-fuchsia-200/80',
+    divider: 'divide-fuchsia-400/25',
+    notRated: 'text-fuchsia-300/50',
+    shadow: 'drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]',
+    placeholderIcon: 'text-white/20',
+    shine: 'rgba(255,255,255,0.45)',
+  },
+};
 
 export interface FifaCardData {
   id: string;
@@ -146,8 +206,6 @@ export default function FifaCard({
         )
       : 0);
 
-  const t = cardThemeStyles[cardTheme];
-
   const slug = (user.name || 'card').replace(/\s+/g, '-').toLowerCase();
 
   const handleDownloadPng = async () => {
@@ -163,173 +221,279 @@ export default function FifaCard({
     }
   };
 
-  // Split attributes into two columns
+  // Split attributes into two columns (sideBadges layout only)
   const leftAttrs = attributes.filter((_, i) => i % 2 === 0);
   const rightAttrs = attributes.filter((_, i) => i % 2 === 1);
+
+  const shield = SHIELD_THEMES[cardTheme];
+
+  const shineSweep = (
+    <motion.div
+      aria-hidden
+      className="card-export-exclude absolute inset-y-0 w-16 pointer-events-none"
+      style={{
+        left: -96,
+        background: `linear-gradient(115deg, transparent 15%, ${shield.shine} 50%, transparent 85%)`,
+      }}
+      animate={{ x: [0, 420] }}
+      transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 2.4, ease: 'easeInOut' }}
+    />
+  );
+
+  const notRatedBanner = !hasRatings && attributes.length === 0 && (
+    <div
+      className={`absolute text-center text-[10px] italic ${shield.notRated}`}
+      style={{ top: shield.layout === 'bottomBadges' ? '74%' : '70%', left: 0, width: '100%' }}
+    >
+      Not yet rated
+    </div>
+  );
 
   const cardFront = (
     <div
       ref={cardRef}
-      className={`relative w-64 rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br ${t.innerBg} border-0`}
+      className="relative w-64 select-none"
+      style={{
+        aspectRatio: shield.aspectRatio,
+        // Clips every child (including the shine sweep) to the shield's own
+        // silhouette, so nothing is ever visible in the transparent margins.
+        WebkitMaskImage: `url(${shield.bg})`,
+        maskImage: `url(${shield.bg})`,
+        WebkitMaskSize: '100% 100%',
+        maskSize: '100% 100%',
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+      }}
     >
-      {/* Golden outer glow border rendered as a box-shadow */}
-      <div
-        className={`absolute inset-0 rounded-2xl pointer-events-none`}
-        style={{ boxShadow: 'inset 0 0 0 3px rgba(250,204,21,0.6)' }}
+      <img
+        src={shield.bg}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="absolute inset-0 w-full h-full object-contain pointer-events-none"
       />
 
-      {/* Top section */}
-      <div className="flex items-start gap-3 p-4 pb-2">
-        {/* Left: OVR + position + nationality */}
-        <div className="flex flex-col items-center min-w-[44px]">
-          <span className={`text-4xl font-black leading-none ${t.overallText}`}>
-            {overall || '—'}
+      {/* OVR + position */}
+      <div
+        className="absolute flex flex-col items-center text-center"
+        style={{ top: shield.layout === 'bottomBadges' ? '8%' : '13%', left: '8%', width: '26%' }}
+      >
+        <span className={`text-3xl font-black leading-none ${shield.ovr} ${shield.shadow}`}>
+          {overall || '—'}
+        </span>
+        {user.position && (
+          <span className={`text-xs font-black uppercase tracking-wide mt-0.5 ${shield.pos} ${shield.shadow}`}>
+            {user.position}
           </span>
-          <span className={`text-[10px] font-bold uppercase tracking-widest ${t.ovrText}`}>OVR</span>
-          {user.position && (
-            <span className={`text-[11px] font-black uppercase tracking-wide mt-0.5 ${t.ovrText}`}>
-              {user.position}
-            </span>
-          )}
-          {user.nationality && (
-            <div className="flex items-center gap-1 mt-1">
-              {user.nationalityFlagUrl && (
-                <img
-                  src={user.nationalityFlagUrl}
-                  alt=""
-                  aria-hidden
-                  className="w-4 h-3 object-cover rounded-[1px] shrink-0"
-                  crossOrigin="anonymous"
-                />
-              )}
-              <span className={`text-[9px] ${t.metaText} font-semibold uppercase tracking-wider text-center`}>
-                {user.nationality}
-              </span>
+        )}
+      </div>
+
+      {shield.layout === 'sideBadges' ? (
+        <>
+          {/* Nationality flag */}
+          {user.nationalityFlagUrl && (
+            <div className="absolute" style={{ top: '31%', left: '9%', width: '10%' }}>
+              <img
+                src={user.nationalityFlagUrl}
+                alt=""
+                aria-hidden
+                crossOrigin="anonymous"
+                className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
+              />
             </div>
           )}
-        </div>
 
-        {/* Right: Photo */}
-        <div className="flex-1 flex justify-center">
+          {/* Club badge */}
+          {user.clubLogoUrl && (
+            <div
+              className="absolute"
+              style={{ top: user.nationalityFlagUrl ? '38%' : '31%', left: '9%', width: '10%' }}
+            >
+              <img
+                src={user.clubLogoUrl}
+                alt=""
+                aria-hidden
+                crossOrigin="anonymous"
+                className="w-full aspect-square object-contain drop-shadow"
+              />
+            </div>
+          )}
+
+          {/* Photo — bottom fades into the shield instead of a hard rectangle edge */}
           <div
-            className={`w-28 h-28 rounded-xl overflow-hidden border-2 ${t.photoBorder} bg-gray-800 shadow-lg`}
+            className="absolute overflow-hidden"
+            style={{
+              top: '9%',
+              left: '37%',
+              width: '58%',
+              height: '46%',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
+            }}
           >
             {user.profilePicUrl ? (
               <img
                 src={user.profilePicUrl}
                 alt={user.name}
-                className="w-full h-full object-cover"
                 crossOrigin="anonymous"
+                className="w-full h-full object-cover object-top"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <UserIcon className="w-12 h-12 text-gray-500" />
+                <UserIcon className={`w-16 h-16 ${shield.placeholderIcon}`} />
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Name & club */}
-      <div className={`text-center px-4 pb-2 border-b ${t.dividerColor}`}>
-        <h3 className={`text-base font-black uppercase tracking-widest ${t.nameText} leading-tight`}>
-          {user.name}
-        </h3>
-        {user.club && (
-          <div className="flex items-center justify-center gap-1 mt-0.5">
-            {user.clubLogoUrl && (
-              <img
-                src={user.clubLogoUrl}
-                alt=""
-                aria-hidden
-                className="w-3.5 h-3.5 object-contain shrink-0"
-                crossOrigin="anonymous"
-              />
+          {/* Name */}
+          <div className="absolute text-center" style={{ top: '57%', left: '4%', width: '92%' }}>
+            <h3
+              className={`text-lg font-black uppercase tracking-widest ${shield.name} leading-tight truncate ${shield.shadow}`}
+            >
+              {user.name}
+            </h3>
+            {peerRating && peerRating.count > 0 && (
+              <div className="flex items-center justify-center gap-1.5 mt-1">
+                <StarRatingDisplay value={peerRating.average} size={11} color={shield.pos} />
+                <span className={`text-[9px] font-semibold ${shield.statLabel}`}>({peerRating.count})</span>
+              </div>
             )}
-            <p className={`text-[10px] font-semibold uppercase tracking-wider ${t.metaText}`}>
-              {user.club}
-            </p>
           </div>
-        )}
-        {peerRating && peerRating.count > 0 && (
-          <div className="flex items-center justify-center gap-1.5 mt-1">
-            <StarRatingDisplay value={peerRating.average} size={11} />
-            <span className={`text-[9px] font-semibold ${t.metaText}`}>
-              ({peerRating.count})
-            </span>
-          </div>
-        )}
-      </div>
 
-      {/* Stats grid */}
-      {(leftAttrs.length > 0 || rightAttrs.length > 0) && (
-        <div className={`mx-3 my-2 rounded-lg ${t.attrsBg} p-2`}>
-          <div className="grid grid-cols-2 gap-x-3">
-            <div className="space-y-1">
-              {leftAttrs.map((attr) => (
-                <div key={attr.id} className="flex items-center justify-between gap-1">
-                  <span className={`text-[10px] font-bold uppercase ${t.attrNameText}`}>
-                    {attr.name.slice(0, 3)}
-                  </span>
-                  <span className={`text-sm font-black ${t.attrValueText}`}>
-                    {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
-                  </span>
+          {/* Stats — two columns split by a vertical divider, matching the reference layout */}
+          {(leftAttrs.length > 0 || rightAttrs.length > 0) && (
+            <div className="absolute" style={{ top: '65%', left: '10%', width: '80%', height: '27%' }}>
+              <div className={`grid grid-cols-2 divide-x h-full ${shield.divider}`}>
+                <div className="flex flex-col justify-center gap-1.5 pr-3">
+                  {leftAttrs.map((attr) => (
+                    <div key={attr.id} className="flex items-baseline gap-1.5">
+                      <span className={`text-base font-black ${shield.statValue} ${shield.shadow}`}>
+                        {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wide ${shield.statLabel}`}>
+                        {attr.name.slice(0, 3)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="space-y-1">
-              {rightAttrs.map((attr) => (
-                <div key={attr.id} className="flex items-center justify-between gap-1">
-                  <span className={`text-[10px] font-bold uppercase ${t.attrNameText}`}>
-                    {attr.name.slice(0, 3)}
-                  </span>
-                  <span className={`text-sm font-black ${t.attrValueText}`}>
-                    {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
-                  </span>
+                <div className="flex flex-col justify-center gap-1.5 pl-3">
+                  {rightAttrs.map((attr) => (
+                    <div key={attr.id} className="flex items-baseline gap-1.5">
+                      <span className={`text-base font-black ${shield.statValue} ${shield.shadow}`}>
+                        {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase tracking-wide ${shield.statLabel}`}>
+                        {attr.name.slice(0, 3)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* WF / SM row */}
-      {(user.weakFoot || user.skillMoves) && (
-        <div className={`flex justify-around px-4 pb-3 pt-1 ${t.metaText}`}>
-          {user.weakFoot && (
-            <div className="flex flex-col items-center gap-0.5">
-              <span className={`text-[8px] font-bold uppercase ${t.attrNameText}`}>WF</span>
-              <StarRating value={user.weakFoot} color={t.attrNameText} />
+              </div>
             </div>
           )}
-          {user.skillMoves && (
-            <div className="flex flex-col items-center gap-0.5">
-              <span className={`text-[8px] font-bold uppercase ${t.attrNameText}`}>SM</span>
-              <StarRating value={user.skillMoves} color={t.attrNameText} />
+        </>
+      ) : (
+        <>
+          {/* Photo — large, fading into the shield instead of a hard rectangle edge */}
+          <div
+            className="absolute overflow-hidden"
+            style={{
+              top: '6%',
+              left: '25%',
+              width: '63%',
+              height: '54%',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
+            }}
+          >
+            {user.profilePicUrl ? (
+              <img
+                src={user.profilePicUrl}
+                alt={user.name}
+                crossOrigin="anonymous"
+                className="w-full h-full object-cover object-top"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <UserIcon className={`w-16 h-16 ${shield.placeholderIcon}`} />
+              </div>
+            )}
+          </div>
+
+          {/* Name */}
+          <div className="absolute text-center" style={{ top: '62%', left: '4%', width: '92%' }}>
+            <h3
+              className={`text-xl font-black uppercase tracking-wide ${shield.name} leading-tight truncate ${shield.shadow}`}
+            >
+              {user.name}
+            </h3>
+            {peerRating && peerRating.count > 0 && (
+              <div className="flex items-center justify-center gap-1.5 mt-1">
+                <StarRatingDisplay value={peerRating.average} size={11} color={shield.pos} />
+                <span className={`text-[9px] font-semibold ${shield.statLabel}`}>({peerRating.count})</span>
+              </div>
+            )}
+          </div>
+
+          {/* Stats — single row, label above value, matching the reference layout */}
+          {attributes.length > 0 && (
+            <div className="absolute" style={{ top: '71%', left: '6%', width: '88%', height: '13%' }}>
+              <div
+                className="grid h-full"
+                style={{ gridTemplateColumns: `repeat(${attributes.length}, minmax(0, 1fr))` }}
+              >
+                {attributes.map((attr) => (
+                  <div key={attr.id} className="flex flex-col items-center justify-center gap-0.5">
+                    <span className={`text-[9px] font-bold uppercase tracking-wide ${shield.statLabel}`}>
+                      {attr.name.slice(0, 3)}
+                    </span>
+                    <span className={`text-sm font-black ${shield.statValue} ${shield.shadow}`}>
+                      {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </div>
+
+          {/* Nationality flag + club badge, centered under the stats */}
+          {(user.nationalityFlagUrl || user.clubLogoUrl) && (
+            <div
+              className="absolute flex items-center justify-center gap-3"
+              style={{ top: '87%', left: 0, width: '100%' }}
+            >
+              {user.nationalityFlagUrl && (
+                <div style={{ width: '9%' }}>
+                  <img
+                    src={user.nationalityFlagUrl}
+                    alt=""
+                    aria-hidden
+                    crossOrigin="anonymous"
+                    className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
+                  />
+                </div>
+              )}
+              {user.clubLogoUrl && (
+                <div style={{ width: '9%' }}>
+                  <img
+                    src={user.clubLogoUrl}
+                    alt=""
+                    aria-hidden
+                    crossOrigin="anonymous"
+                    className="w-full aspect-square object-contain drop-shadow"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
-      {!hasRatings && attributes.length === 0 && (
-        <div className={`text-center text-[10px] ${t.notRatedText} italic pb-3`}>
-          Not yet rated
-        </div>
-      )}
+      {notRatedBanner}
 
-      {/* Shine sweep — a soft diagonal highlight that loops across the card.
-          Excluded from PNG exports so it never freezes mid-sweep in the file. */}
-      <motion.div
-        aria-hidden
-        className="card-export-exclude absolute inset-y-0 w-16 pointer-events-none"
-        style={{
-          left: -96,
-          background:
-            'linear-gradient(115deg, transparent 15%, rgba(255,255,255,0.45) 50%, transparent 85%)',
-        }}
-        animate={{ x: [0, 420] }}
-        transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 2.4, ease: 'easeInOut' }}
-      />
+      {/* Shine sweep — clipped to the shield shape by the mask above, and excluded
+          from PNG exports so it never freezes mid-sweep in the file. */}
+      {shineSweep}
     </div>
   );
 

@@ -95,7 +95,7 @@ export default function CreateCard() {
   };
 
   const addStat = () => {
-    if (stats.length >= 8) { toast.info('Maximum 8 stats'); return; }
+    if (stats.length >= 6) { toast.info('Maximum 6 stats'); return; }
     setStats((prev) => [...prev, { id: Date.now().toString(), name: 'STAT', value: 70 }]);
   };
 

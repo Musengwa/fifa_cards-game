@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Trophy, Lock, BarChart2 } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
+import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -65,11 +66,7 @@ export default function Analytics() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading analytics…</div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!group) {
