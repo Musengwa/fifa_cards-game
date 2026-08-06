@@ -7,11 +7,12 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import {
   Plus, LogOut, Users, Calendar, User, Bell,
-  CheckCircle2, Clock, CreditCard, Check, Lock, Shield, Globe2,
+  CheckCircle2, Clock, CreditCard, Check, Lock, Shield, Globe2, Trash2, AlertTriangle,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
-import { signOut, getSession, isAuthenticated, updateUserProfile } from '../lib/auth';
+import { signOut, getSession, isAuthenticated, updateUserProfile, deleteAccount } from '../lib/auth';
+import { Checkbox } from '../components/ui/checkbox';
 import ClubPicker, { Club } from '../components/ClubPicker';
 import NationPicker, { Nation } from '../components/NationPicker';
 import PageLoader from '../components/PageLoader';
@@ -43,6 +44,9 @@ export default function Dashboard() {
   const [pendingInviteCount, setPendingInviteCount] = useState(0);
   const [nameInput, setNameInput] = useState('');
   const [savingName, setSavingName] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deleteAccountConfirmed, setDeleteAccountConfirmed] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) { navigate('/'); return; }
@@ -91,6 +95,23 @@ export default function Dashboard() {
   const handleSignOut = async () => {
     try { await signOut(); navigate('/'); }
     catch { toast.error('Sign out failed'); }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!deleteAccountConfirmed) {
+      toast.error('Please check the confirmation box first');
+      return;
+    }
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      toast.success('Account deleted');
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete account');
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -276,6 +297,75 @@ export default function Dashboard() {
                       </span>
                     </button>
                   </div>
+
+                  {/* Danger zone */}
+                  <div className="pt-2 border-t space-y-2">
+                    <Label className="text-red-600">Danger Zone</Label>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setProfileDialogOpen(false);
+                        setDeleteAccountConfirmed(false);
+                        setDeleteAccountOpen(true);
+                      }}
+                      className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Account
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Delete Account Confirmation Dialog */}
+            <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-red-600">
+                    <AlertTriangle className="w-5 h-5" />
+                    Delete Account — This Cannot Be Undone
+                  </DialogTitle>
+                  <DialogDescription>
+                    This permanently deletes your account. Groups you created are deleted for everyone;
+                    groups you only belong to will just lose your membership and ratings.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800 space-y-1">
+                    <p>• Your profile and login will be <strong>permanently deleted</strong></p>
+                    <p>• Any groups you created will be deleted for all members</p>
+                    <p>• Your ratings and votes will be removed from other groups</p>
+                    <p>• This action cannot be reversed</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Checkbox
+                      id="delete-account-confirm"
+                      checked={deleteAccountConfirmed}
+                      onCheckedChange={(checked) => setDeleteAccountConfirmed(!!checked)}
+                    />
+                    <label htmlFor="delete-account-confirm" className="text-sm font-medium cursor-pointer">
+                      I understand this action is permanent and cannot be reversed
+                    </label>
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setDeleteAccountOpen(false)}
+                    disabled={deletingAccount}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={handleDeleteAccount}
+                    disabled={!deleteAccountConfirmed || deletingAccount}
+                  >
+                    {deletingAccount ? 'Deleting…' : 'Delete Account Forever'}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>

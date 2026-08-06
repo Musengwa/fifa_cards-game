@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -8,13 +8,14 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { Slider } from '../components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { ArrowLeft, Share2, Settings, Users, TrendingUp, Award, Search, Copy, Check, BarChart3, StopCircle, Trophy, Sparkles, AlertTriangle } from 'lucide-react';
+import {
+  ArrowLeft, Share2, Settings, Users, TrendingUp, Award, Search, Copy, Check, BarChart3,
+  StopCircle, Trophy, Sparkles, AlertTriangle, User as UserIcon, CheckCircle2, Trash2,
+} from 'lucide-react';
 import { Checkbox } from '../components/ui/checkbox';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { getCurrentUserId } from '../lib/auth';
 import { toast } from 'sonner';
-import FifaCard from '../components/FifaCard';
 import Showroom from '../components/Showroom';
 import TrophyRoomCinematic from '../components/TrophyRoomCinematic';
 import { StarRatingInput } from '../components/StarRating';
@@ -39,6 +40,50 @@ interface Member {
   name: string;
   email: string;
   profilePicUrl: string | null;
+}
+
+/** Tappable avatar + name tile used to pick a member — for rating and for award votes. */
+function MemberTile({
+  member,
+  onClick,
+  disabled,
+  selected,
+  badge,
+}: {
+  member: Member;
+  onClick: () => void;
+  disabled?: boolean;
+  selected?: boolean;
+  badge?: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex flex-col items-center gap-1.5 p-2 sm:p-3 rounded-xl border-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+        selected ? 'border-green-500 bg-green-500/10' : 'border-transparent hover:border-black/10 hover:bg-black/5'
+      }`}
+    >
+      <div className="relative">
+        {member.profilePicUrl ? (
+          <img
+            src={member.profilePicUrl}
+            alt={member.name}
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center">
+            <UserIcon className="w-7 h-7 text-gray-500" />
+          </div>
+        )}
+        {badge}
+      </div>
+      <span className="text-xs sm:text-sm font-medium text-center leading-tight line-clamp-2 max-w-[80px]">
+        {member.name}
+      </span>
+    </button>
+  );
 }
 
 export default function GroupDetail() {
@@ -69,6 +114,9 @@ export default function GroupDetail() {
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
   const [endSessionConfirmed, setEndSessionConfirmed] = useState(false);
   const [endingSession, setEndingSession] = useState(false);
+  const [deleteGroupOpen, setDeleteGroupOpen] = useState(false);
+  const [deleteGroupConfirmed, setDeleteGroupConfirmed] = useState(false);
+  const [deletingGroup, setDeletingGroup] = useState(false);
 
   const currentUserId = getCurrentUserId();
   const isCreator = group?.creatorId === currentUserId;
@@ -199,6 +247,28 @@ export default function GroupDetail() {
       toast.error(error.message || 'Failed to end session');
     } finally {
       setEndingSession(false);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!deleteGroupConfirmed) {
+      toast.error('Please check the confirmation box first');
+      return;
+    }
+    setDeletingGroup(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/group/${groupId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      toast.success('Group deleted');
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete group');
+    } finally {
+      setDeletingGroup(false);
     }
   };
 
@@ -752,7 +822,8 @@ export default function GroupDetail() {
                   <DialogHeader>
                     <DialogTitle>Group Settings</DialogTitle>
                     <DialogDescription>
-                      Control when cards and analytics are visible to members
+                      Manage this group's image, description, and analytics visibility. Cards are shown
+                      to members automatically once the session ends.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
@@ -781,18 +852,6 @@ export default function GroupDetail() {
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label>Release Cards</Label>
-                        <p className="text-sm text-gray-500">
-                          Allow members to see their FIFA cards with ratings
-                        </p>
-                      </div>
-                      <Switch
-                        checked={group.cardsReleased}
-                        onCheckedChange={(checked) => handleSettingsUpdate(checked, undefined, undefined)}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
                         <Label>Show Analytics</Label>
                         <p className="text-sm text-gray-500">
                           Display voting results and detailed statistics
@@ -803,6 +862,69 @@ export default function GroupDetail() {
                         onCheckedChange={(checked) => handleSettingsUpdate(undefined, checked, undefined)}
                       />
                     </div>
+
+                    {/* Danger zone */}
+                    <div className="pt-2 border-t space-y-2">
+                      <Label className="text-red-600">Danger Zone</Label>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSettingsOpen(false);
+                          setDeleteGroupConfirmed(false);
+                          setDeleteGroupOpen(true);
+                        }}
+                        className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Group
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              {/* Delete Group Confirmation Dialog */}
+              <Dialog open={deleteGroupOpen} onOpenChange={setDeleteGroupOpen}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2 text-red-600">
+                      <AlertTriangle className="w-5 h-5" />
+                      Delete Group — This Cannot Be Undone
+                    </DialogTitle>
+                    <DialogDescription>
+                      Deleting this group permanently removes it, along with every rating, vote, and
+                      pending invite tied to it, for all members. This action is irreversible.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-2">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id="delete-group-confirm"
+                        checked={deleteGroupConfirmed}
+                        onCheckedChange={(checked) => setDeleteGroupConfirmed(!!checked)}
+                      />
+                      <label htmlFor="delete-group-confirm" className="text-sm font-medium cursor-pointer">
+                        I understand this action is permanent and cannot be reversed
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setDeleteGroupOpen(false)}
+                      disabled={deletingGroup}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={handleDeleteGroup}
+                      disabled={!deleteGroupConfirmed || deletingGroup}
+                    >
+                      {deletingGroup ? 'Deleting…' : 'Delete Group Forever'}
+                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -812,12 +934,8 @@ export default function GroupDetail() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="cards" className="space-y-4 sm:space-y-6">
-          <TabsList className="bg-white/10 w-full grid grid-cols-3">
-            <TabsTrigger value="cards" className="text-xs sm:text-base">
-              <Users className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Cards</span>
-            </TabsTrigger>
+        <Tabs defaultValue="rate" className="space-y-4 sm:space-y-6">
+          <TabsList className="bg-white/10 w-full grid grid-cols-2">
             <TabsTrigger value="rate" className="text-xs sm:text-base">
               <TrendingUp className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">Rate Members</span>
@@ -827,34 +945,6 @@ export default function GroupDetail() {
               <span className="hidden sm:inline">Vote Awards</span>
             </TabsTrigger>
           </TabsList>
-
-          {/* Cards Tab */}
-          <TabsContent value="cards" className="space-y-6">
-            {!group.cardsReleased && !isCreator && (
-              <Card className="bg-yellow-50 border-yellow-200">
-                <CardContent className="pt-6">
-                  <p className="text-center text-yellow-800">
-                    Cards haven't been released yet. Check back later!
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {(group.cardsReleased || isCreator) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {members.map((member) => (
-                  <FifaCard
-                    key={member.id}
-                    user={member}
-                    attributes={group.attributes}
-                    ratings={ratings[member.id] || {}}
-                    peerRating={starRatings[member.id] || null}
-                    showDownload
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
 
           {/* Rate Tab */}
           <TabsContent value="rate" className="space-y-6">
@@ -872,7 +962,7 @@ export default function GroupDetail() {
               <CardHeader>
                 <CardTitle className="text-base sm:text-xl">Rate Your Teammates</CardTitle>
                 <CardDescription className="text-sm">
-                  Rate each member on the defined attributes (you cannot rate yourself)
+                  Tap a teammate to rate them on the defined attributes (you cannot rate yourself)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -886,28 +976,21 @@ export default function GroupDetail() {
                   </p>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 sm:mt-6">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 sm:gap-4 mt-4 sm:mt-6">
                   {otherMembers.map((member) => {
                     const hasRated = myRatings.some(r => r.toUserId === member.id);
                     return (
-                      <Card key={member.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="pt-4 sm:pt-6">
-                          <div className="flex justify-between items-center gap-2">
-                            <div className="min-w-0 flex-1">
-                              <h3 className="font-semibold text-sm sm:text-base truncate">{member.name}</h3>
-                            </div>
-                            <Button
-                              onClick={() => openRateDialog(member)}
-                              variant={hasRated ? 'outline' : 'default'}
-                              disabled={group.sessionEnded}
-                              size="sm"
-                              className="shrink-0"
-                            >
-                              {hasRated ? 'Update' : 'Rate'}
-                            </Button>
+                      <MemberTile
+                        key={member.id}
+                        member={member}
+                        onClick={() => openRateDialog(member)}
+                        disabled={group.sessionEnded}
+                        badge={hasRated && (
+                          <div className="absolute -bottom-0.5 -right-0.5 bg-green-500 rounded-full p-0.5 border-2 border-white">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                           </div>
-                        </CardContent>
-                      </Card>
+                        )}
+                      />
                     );
                   })}
                 </div>
@@ -986,24 +1069,17 @@ export default function GroupDetail() {
                   {group.awardCategories.map((award) => (
                     <div key={award.id} className="space-y-2">
                       <Label className="text-sm sm:text-base">{award.name}</Label>
-                      <Select
-                        value={voteSelections[award.id] || ''}
-                        onValueChange={(value) =>
-                          setVoteSelections({ ...voteSelections, [award.id]: value })
-                        }
-                        disabled={group.sessionEnded}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a member" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {otherMembers.map((member) => (
-                            <SelectItem key={member.id} value={member.id}>
-                              {member.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                        {otherMembers.map((member) => (
+                          <MemberTile
+                            key={member.id}
+                            member={member}
+                            selected={voteSelections[award.id] === member.id}
+                            onClick={() => setVoteSelections({ ...voteSelections, [award.id]: member.id })}
+                            disabled={group.sessionEnded}
+                          />
+                        ))}
+                      </div>
                     </div>
                   ))}
 

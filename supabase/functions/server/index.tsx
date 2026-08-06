@@ -69,6 +69,37 @@ const verifyAuth = async (authHeader: string | null) => {
   return user.id;
 };
 
+// Looks up raw kv_store keys by prefix (kv_store.tsx's getByPrefix only returns
+// values), so cascading deletes can target the exact rows without guessing.
+const getKeysByPrefix = async (prefix: string): Promise<string[]> => {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('kv_store_44e0fa0c')
+    .select('key')
+    .like('key', `${prefix}%`);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row: any) => row.key);
+};
+
+// Deletes a group and everything scoped to it (ratings, votes, invites), and
+// unlinks it from every member's group list.
+const deleteGroupCascade = async (group: any) => {
+  await Promise.all(
+    (group.memberIds || []).map(async (memberId: string) => {
+      const memberGroups = await kv.get(`userGroups:${memberId}`) || [];
+      await kv.set(`userGroups:${memberId}`, memberGroups.filter((id: string) => id !== group.id));
+    })
+  );
+
+  const [ratingKeys, voteKeys, inviteKeys] = await Promise.all([
+    getKeysByPrefix(`rating:${group.id}:`),
+    getKeysByPrefix(`vote:${group.id}:`),
+    getKeysByPrefix(`invite:${group.id}:`),
+  ]);
+
+  await kv.mdel([...ratingKeys, ...voteKeys, ...inviteKeys, `group:${group.id}`]);
+};
+
 // Health check endpoint
 app.get("/make-server-44e0fa0c/health", (c) => {
   return c.json({ status: "ok" });
@@ -243,6 +274,53 @@ app.post("/make-server-44e0fa0c/user/upload-profile-pic", async (c) => {
   } catch (error) {
     console.error('Error in upload profile pic endpoint:', error);
     return c.json({ error: 'Upload failed' }, 500);
+  }
+});
+
+// Delete the current user's account: leaves/deletes their groups, scrubs their
+// own ratings/votes/invites, then removes the profile and the auth record itself.
+app.delete("/make-server-44e0fa0c/user/account", async (c: any) => {
+  try {
+    const userId = await verifyAuth(c.req.header('Authorization'));
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const groupIds: string[] = await kv.get(`userGroups:${userId}`) || [];
+    const groups = await kv.mget(groupIds.map((id) => `group:${id}`));
+
+    for (const group of groups) {
+      if (!group) continue;
+
+      if (group.creatorId === userId) {
+        await deleteGroupCascade(group);
+        continue;
+      }
+
+      group.memberIds = (group.memberIds || []).filter((id: string) => id !== userId);
+      await kv.set(`group:${group.id}`, group);
+
+      const myRatingKeys = await getKeysByPrefix(`rating:${group.id}:${userId}:`);
+      await kv.mdel([...myRatingKeys, `vote:${group.id}:${userId}`]);
+    }
+
+    // Clean up any pending invites addressed to this user.
+    const allInviteKeys = await getKeysByPrefix('invite:');
+    const myInviteKeys = allInviteKeys.filter((key) => key.endsWith(`:${userId}`));
+
+    await kv.mdel([...myInviteKeys, `user:${userId}`, `userGroups:${userId}`]);
+
+    const supabaseAdmin = getSupabaseAdmin();
+    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (deleteAuthError) {
+      console.error('Error deleting auth user:', deleteAuthError);
+      return c.json({ error: 'Account data was removed, but deleting the login record failed. Contact support.' }, 500);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    return c.json({ error: 'Failed to delete account' }, 500);
   }
 });
 
@@ -474,6 +552,34 @@ app.put("/make-server-44e0fa0c/group/:groupId/settings", async (c) => {
   } catch (error) {
     console.error('Error updating group settings:', error);
     return c.json({ error: 'Failed to update settings' }, 500);
+  }
+});
+
+// Delete group (creator only)
+app.delete("/make-server-44e0fa0c/group/:groupId", async (c: any) => {
+  try {
+    const userId = await verifyAuth(c.req.header('Authorization'));
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const groupId = c.req.param('groupId');
+    const group = await kv.get(`group:${groupId}`);
+
+    if (!group) {
+      return c.json({ error: 'Group not found' }, 404);
+    }
+
+    if (group.creatorId !== userId) {
+      return c.json({ error: 'Only the creator can delete this group' }, 403);
+    }
+
+    await deleteGroupCascade(group);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting group:', error);
+    return c.json({ error: 'Failed to delete group' }, 500);
   }
 });
 

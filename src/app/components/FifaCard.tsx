@@ -252,11 +252,12 @@ export default function FifaCard({
   const cardFront = (
     <div
       ref={cardRef}
-      className="relative w-64 select-none"
+      className="relative w-64 select-none overflow-hidden"
       style={{
         aspectRatio: shield.aspectRatio,
-        // Clips every child (including the shine sweep) to the shield's own
-        // silhouette, so nothing is ever visible in the transparent margins.
+        // overflow-hidden above stops the sliding shine sweep from ever widening the
+        // page's scrollable area; the mask below then clips it to the shield's own
+        // silhouette, so nothing is ever visible in the transparent margins either.
         WebkitMaskImage: `url(${shield.bg})`,
         maskImage: `url(${shield.bg})`,
         WebkitMaskSize: '100% 100%',
@@ -499,7 +500,12 @@ export default function FifaCard({
 
   return (
     <div className="flex flex-col items-center gap-3">
-      {cardFront}
+      <motion.div
+        animate={{ y: [0, -10, 0], rotate: [0, 1, 0, -1, 0] }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        {cardFront}
+      </motion.div>
 
       {showDownload && (
         <button

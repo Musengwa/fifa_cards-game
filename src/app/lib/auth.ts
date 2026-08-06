@@ -151,6 +151,19 @@ export const signIn = async (email: string, password: string) => {
   }
 };
 
+export const deleteAccount = async () => {
+  const response = await fetch(`${API_BASE_URL}/user/account`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Failed to delete account');
+
+  await supabase.auth.signOut();
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user_id');
+};
+
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
