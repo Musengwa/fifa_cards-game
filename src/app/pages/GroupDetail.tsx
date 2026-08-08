@@ -573,6 +573,9 @@ export default function GroupDetail() {
           {postSessionTab === 'trophies' && (
             <TrophyRoomCinematic
               members={members}
+              attributes={group.attributes}
+              ratings={ratings}
+              starRatings={starRatings}
               votes={votes}
               awardCategories={group.awardCategories}
             />

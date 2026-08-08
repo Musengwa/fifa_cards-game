@@ -113,7 +113,7 @@ const SHIELD_THEMES: Record<CardTheme, ShieldTheme> = {
     bg: goldShieldBg,
     aspectRatio: '1022 / 1517',
     layout: 'sideBadges',
-    ovr: 'text-amber-700',
+    ovr: 'text-amber-900',
     pos: 'text-amber-700/90',
     name: 'text-gray-900',
     statValue: 'text-gray-900',
@@ -279,7 +279,7 @@ export default function FifaCard({
         className="absolute flex flex-col items-center text-center"
         style={{ top: shield.layout === 'bottomBadges' ? '8%' : '13%', left: '8%', width: '26%' }}
       >
-        <span className={`text-3xl font-black leading-none ${shield.ovr} ${shield.shadow}`}>
+        <span className={`text-5xl font-black leading-none ${shield.ovr} ${shield.shadow}`}>
           {overall || '—'}
         </span>
         {user.position && (
@@ -324,10 +324,10 @@ export default function FifaCard({
           <div
             className="absolute overflow-hidden"
             style={{
-              top: '9%',
-              left: '37%',
-              width: '58%',
-              height: '46%',
+              top: '17%',
+              left: '40%',
+              width: '53%',
+              height: '40%',
               WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
               maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
             }}
@@ -399,10 +399,11 @@ export default function FifaCard({
           <div
             className="absolute overflow-hidden"
             style={{
-              top: '6%',
+              padding: '2%',
+              top: '19%',
               left: '25%',
-              width: '63%',
-              height: '54%',
+              width: '53%',
+              height: '40%',
               WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
               maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
             }}
@@ -501,8 +502,8 @@ export default function FifaCard({
   return (
     <div className="flex flex-col items-center gap-3">
       <motion.div
-        animate={{ y: [0, -10, 0], rotate: [0, 1, 0, -1, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ y: [0, -10, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
       >
         {cardFront}
       </motion.div>
