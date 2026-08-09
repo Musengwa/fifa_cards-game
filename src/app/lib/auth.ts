@@ -200,3 +200,27 @@ export const isAuthenticated = () => {
 export const getCurrentUserId = () => {
   return localStorage.getItem('user_id');
 };
+
+// Keeps localStorage['access_token'] in sync with the Supabase SDK's own session.
+//
+// The SDK is configured with autoRefreshToken: true, so it silently refreshes the
+// JWT in the background on its own timer — but that refreshed token only lands in
+// the SDK's internal storage, never in the plain 'access_token' key that every
+// manual fetch() in this app reads via getAuthHeaders(). Without this listener,
+// every raw API call keeps using whatever token was captured at the last sign-in
+// or explicit getSession() call, so once ~1h passes (the JWT's default lifetime)
+// every fetch on every page — not just Dashboard, which happens to call
+// getSession() on mount — starts 401'ing until the user fully logs out and back
+// in. Subscribing here once at app startup keeps the plain key current everywhere,
+// automatically, for the life of the tab.
+export const initAuthSync = () => {
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.access_token) {
+      localStorage.setItem('access_token', session.access_token);
+      localStorage.setItem('user_id', session.user.id);
+    } else {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_id');
+    }
+  });
+};

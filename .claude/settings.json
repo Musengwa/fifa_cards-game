@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(npm ls *)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(curl -s http://localhost:5175/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:5175/src/app/components/Showroom.tsx\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:5175/src/main.tsx\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:5175/src/app/lib/auth.ts\")",
+      "Bash(curl -s \"http://localhost:5175/src/app/components/Showroom.tsx\")",
+      "Bash(lsof -ti:5175 -sTCP:LISTEN)",
+      "Bash(xargs -r kill)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5175/)"
     ]
   }
 }
