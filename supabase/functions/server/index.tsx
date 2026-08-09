@@ -69,35 +69,17 @@ const verifyAuth = async (authHeader: string | null) => {
   return user.id;
 };
 
-// Looks up raw kv_store keys by prefix (kv_store.tsx's getByPrefix only returns
-// values), so cascading deletes can target the exact rows without guessing.
-const getKeysByPrefix = async (prefix: string): Promise<string[]> => {
-  const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
-    .from('kv_store_44e0fa0c')
-    .select('key')
-    .like('key', `${prefix}%`);
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((row: any) => row.key);
-};
-
-// Deletes a group and everything scoped to it (ratings, votes, invites), and
-// unlinks it from every member's group list.
-const deleteGroupCascade = async (group: any) => {
-  await Promise.all(
-    (group.memberIds || []).map(async (memberId: string) => {
-      const memberGroups = await kv.get(`userGroups:${memberId}`) || [];
-      await kv.set(`userGroups:${memberId}`, memberGroups.filter((id: string) => id !== group.id));
-    })
-  );
-
-  const [ratingKeys, voteKeys, inviteKeys] = await Promise.all([
-    getKeysByPrefix(`rating:${group.id}:`),
-    getKeysByPrefix(`vote:${group.id}:`),
-    getKeysByPrefix(`invite:${group.id}:`),
-  ]);
-
-  await kv.mdel([...ratingKeys, ...voteKeys, ...inviteKeys, `group:${group.id}`]);
+// Deletes a group record and unlinks it from every member's group list. Ratings,
+// votes, and invites tied to the group are left in place rather than swept up —
+// deliberately simple/robust over exhaustive, since orphaned rows here are inert.
+const deleteGroupRecord = async (group: any) => {
+  for (const memberId of group.memberIds || []) {
+    const memberGroups = (await kv.get(`userGroups:${memberId}`) || []).filter(
+      (id: string) => id !== group.id
+    );
+    await kv.set(`userGroups:${memberId}`, memberGroups);
+  }
+  await kv.del(`group:${group.id}`);
 };
 
 // Health check endpoint
@@ -277,8 +259,11 @@ app.post("/make-server-44e0fa0c/user/upload-profile-pic", async (c) => {
   }
 });
 
-// Delete the current user's account: leaves/deletes their groups, scrubs their
-// own ratings/votes/invites, then removes the profile and the auth record itself.
+// Delete the current user's account: deletes groups they created, leaves groups
+// they only belonged to, clears pending invites addressed to them, then removes
+// their profile and the Supabase Auth record itself. Mirrors the same simple,
+// non-cascading style as /leave and the group-delete endpoint above — every
+// lookup here goes through the public kv helpers, no raw table access.
 app.delete("/make-server-44e0fa0c/user/account", async (c: any) => {
   try {
     const userId = await verifyAuth(c.req.header('Authorization'));
@@ -287,28 +272,31 @@ app.delete("/make-server-44e0fa0c/user/account", async (c: any) => {
     }
 
     const groupIds: string[] = await kv.get(`userGroups:${userId}`) || [];
-    const groups = await kv.mget(groupIds.map((id) => `group:${id}`));
+    const groups = await kv.mget(groupIds.map((id: string) => `group:${id}`));
 
     for (const group of groups) {
       if (!group) continue;
 
       if (group.creatorId === userId) {
-        await deleteGroupCascade(group);
+        await deleteGroupRecord(group);
         continue;
       }
 
       group.memberIds = (group.memberIds || []).filter((id: string) => id !== userId);
       await kv.set(`group:${group.id}`, group);
-
-      const myRatingKeys = await getKeysByPrefix(`rating:${group.id}:${userId}:`);
-      await kv.mdel([...myRatingKeys, `vote:${group.id}:${userId}`]);
     }
 
-    // Clean up any pending invites addressed to this user.
-    const allInviteKeys = await getKeysByPrefix('invite:');
-    const myInviteKeys = allInviteKeys.filter((key) => key.endsWith(`:${userId}`));
+    // Clean up any pending invites addressed to this user — reconstruct the key
+    // from each invite's own fields rather than scanning raw storage keys.
+    const allInvites = await kv.getByPrefix('invite:');
+    for (const invite of allInvites) {
+      if (invite.toUserId === userId) {
+        await kv.del(`invite:${invite.groupId}:${userId}`);
+      }
+    }
 
-    await kv.mdel([...myInviteKeys, `user:${userId}`, `userGroups:${userId}`]);
+    await kv.del(`user:${userId}`);
+    await kv.del(`userGroups:${userId}`);
 
     const supabaseAdmin = getSupabaseAdmin();
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
@@ -555,7 +543,38 @@ app.put("/make-server-44e0fa0c/group/:groupId/settings", async (c) => {
   }
 });
 
-// Delete group (creator only)
+// Leave group (member removes themselves)
+app.post("/make-server-44e0fa0c/group/:groupId/leave", async (c: any) => {
+  try {
+    const userId = await verifyAuth(c.req.header('Authorization'));
+    if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const groupId = c.req.param('groupId');
+    const group = await kv.get(`group:${groupId}`);
+    if (!group) return c.json({ error: 'Group not found' }, 404);
+
+    if (group.creatorId === userId) {
+      return c.json({ error: 'Group creator cannot leave — delete the group instead' }, 400);
+    }
+
+    if (!group.memberIds.includes(userId)) {
+      return c.json({ error: 'You are not a member of this group' }, 400);
+    }
+
+    group.memberIds = group.memberIds.filter((id: string) => id !== userId);
+    await kv.set(`group:${groupId}`, group);
+
+    const userGroups = (await kv.get(`userGroups:${userId}`) || []).filter((id: string) => id !== groupId);
+    await kv.set(`userGroups:${userId}`, userGroups);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error leaving group:', error);
+    return c.json({ error: 'Failed to leave group' }, 500);
+  }
+});
+
+// Delete group (creator only) — removes the group and cleans up every member's list
 app.delete("/make-server-44e0fa0c/group/:groupId", async (c: any) => {
   try {
     const userId = await verifyAuth(c.req.header('Authorization'));
@@ -574,7 +593,7 @@ app.delete("/make-server-44e0fa0c/group/:groupId", async (c: any) => {
       return c.json({ error: 'Only the creator can delete this group' }, 403);
     }
 
-    await deleteGroupCascade(group);
+    await deleteGroupRecord(group);
 
     return c.json({ success: true });
   } catch (error) {

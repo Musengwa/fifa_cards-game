@@ -12,7 +12,13 @@
       "Bash(curl -s \"http://localhost:5175/src/app/components/Showroom.tsx\")",
       "Bash(lsof -ti:5175 -sTCP:LISTEN)",
       "Bash(xargs -r kill)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5175/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5175/)",
+      "Bash(npx --yes esbuild \"supabase/functions/server/index.tsx\" --loader=tsx --format=esm --bundle=false --outfile=/tmp/_syntax_check.js)",
+      "Bash(npx --yes esbuild \"supabase/functions/server/index.tsx\" --bundle=false --outfile=/tmp/_syntax_check.js)",
+      "Bash(echo \"exit=$?\")"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
     ]
   }
 }
