@@ -185,7 +185,8 @@ function MemberCarousel({
           <motion.div
             key={current.id}
             custom={direction}
-            variants={variants}
+            // Motion One typing differs from Framer Motion; cast to `any` to avoid TS mismatch
+            variants={variants as any}
             initial="enter"
             animate="center"
             exit="exit"
@@ -372,18 +373,7 @@ export default function Showroom({ members, attributes, ratings, starRatings = {
           </Button>
         </div>
 
-        {/* Header */}
-        <div className={`text-center mb-12 sm:mb-16 rounded-3xl p-8 backdrop-blur-sm bg-black/10 border ${t.cardBorder}`}>
-          <div className="flex justify-center items-center gap-4 mb-3">
-            <Sparkles className={`w-8 h-8 sm:w-12 sm:h-12 ${t.textAccent} animate-pulse`} />
-            <h1 className={`text-4xl sm:text-7xl font-black ${t.textPrimary} tracking-tight`}>SHOWROOM</h1>
-            <Sparkles className={`w-8 h-8 sm:w-12 sm:h-12 ${t.textAccent} animate-pulse`} />
-          </div>
-          <p className={`text-lg sm:text-2xl ${t.textSecondary} font-light`}>
-            Official Member Gallery & Rankings
-          </p>
-        </div>
-
+      
         {/* Roster deck — one card at a time */}
         <div className="mb-12">
           {membersWithStats.length === 0 ? (

@@ -1,7 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import confetti from 'canvas-confetti';
 import { Trophy, Sparkles, ChevronDown, User as UserIcon } from 'lucide-react';
 import FifaCard from './FifaCard';
+import { isMainAward, formatAwardName } from '../lib/awards';
+
+const MAIN_AWARD_COLORS = ['#facc15', '#fbbf24', '#f59e0b', '#fde68a', '#ffffff'];
+
+/** Confetti burst fired the instant the flip card lands on the winner's face — a
+ * short, punchy celebration for a normal award, a longer multi-burst one (gold
+ * palette, wider spread) for the headline "main" award. */
+function fireAwardConfetti(main: boolean) {
+  if (!main) {
+    confetti({ particleCount: 70, spread: 75, startVelocity: 45, origin: { y: 0.6 }, zIndex: 200 });
+    return;
+  }
+  const gold = { colors: MAIN_AWARD_COLORS, zIndex: 200 };
+  confetti({ ...gold, particleCount: 200, spread: 130, startVelocity: 60, scalar: 1.15, origin: { y: 0.55 } });
+  confetti({ ...gold, particleCount: 120, angle: 60, spread: 80, startVelocity: 55, origin: { x: 0, y: 0.65 } });
+  confetti({ ...gold, particleCount: 120, angle: 120, spread: 80, startVelocity: 55, origin: { x: 1, y: 0.65 } });
+  setTimeout(() => {
+    confetti({ ...gold, particleCount: 150, spread: 140, scalar: 1.2, origin: { y: 0.5 } });
+  }, 300);
+  setTimeout(() => {
+    confetti({ ...gold, particleCount: 90, angle: 60, spread: 70, origin: { x: 0.1, y: 0.5 } });
+    confetti({ ...gold, particleCount: 90, angle: 120, spread: 70, origin: { x: 0.9, y: 0.5 } });
+  }, 550);
+}
 
 interface Member {
   id: string;
@@ -101,6 +126,8 @@ function AwardSegment({
 }) {
   const [revealed, setRevealed] = useState(status === 'completed');
   const [showNext, setShowNext] = useState(false);
+  const main = isMainAward(award.name);
+  const displayName = formatAwardName(award.name);
 
   // The reveal only ever starts in response to this segment becoming the active
   // one — never in response to scroll position — so "Next" is what makes the
@@ -114,6 +141,16 @@ function AwardSegment({
     const timer = setTimeout(() => setRevealed(true), 5000);
     return () => clearTimeout(timer);
   }, [status, winner]);
+
+  // Confetti fires the moment the card lands on its winner face — only for the
+  // segment actually playing its reveal for the first time, never when the side
+  // dots are used to look back at an already-finished award.
+  const confettiFired = useRef(false);
+  useEffect(() => {
+    if (!revealed || status !== 'active' || !winner?.member || confettiFired.current) return;
+    confettiFired.current = true;
+    fireAwardConfetti(main);
+  }, [revealed, status, winner, main]);
 
   useEffect(() => {
     if (!revealed || status !== 'active') return;
@@ -149,11 +186,16 @@ function AwardSegment({
         <p className="text-amber-300/80 text-xs sm:text-sm font-bold uppercase tracking-[0.35em] mb-2">
           Award {index + 1} of {total}
         </p>
+        {main && (
+          <p className="inline-flex items-center gap-1.5 text-amber-300 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] mb-2 px-3 py-1 rounded-full border border-amber-400/40 bg-amber-400/10">
+            <Sparkles className="w-3 h-3" /> Main Award
+          </p>
+        )}
         {!revealed ? (
           <motion.h2
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-3xl sm:text-5xl font-black text-white tracking-tight"
+            className={`font-black text-white tracking-tight ${main ? 'text-4xl sm:text-6xl' : 'text-3xl sm:text-5xl'}`}
           >
             Who is it going to be?
           </motion.h2>
@@ -161,9 +203,11 @@ function AwardSegment({
           <motion.h2
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-400"
+            className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-400 ${
+              main ? 'text-3xl sm:text-5xl' : 'text-2xl sm:text-4xl'
+            }`}
           >
-            {award.name}
+            {displayName}
           </motion.h2>
         )}
       </div>
@@ -196,24 +240,26 @@ function AwardSegment({
             </motion.div>
           ))}
 
-        {/* Flip card: mystery back → winner's FIFA card front */}
+        {/* Flip card: mystery back → winner's FIFA card front — bigger stage for the main award */}
         <div className="relative z-10" style={{ perspective: 1500 }}>
           <motion.div
-            className="relative w-56 sm:w-64"
+            className={`relative ${main ? 'w-64 sm:w-80' : 'w-48 sm:w-56'}`}
             style={{ transformStyle: 'preserve-3d', aspectRatio: '741 / 1186' }}
             animate={{ rotateY: revealed ? 180 : 0 }}
             transition={{ duration: 1.1, ease: 'easeInOut' }}
           >
             <div
-              className="absolute inset-0 rounded-2xl bg-gradient-to-br from-zinc-900 via-black to-zinc-900 border-4 border-amber-400/50 shadow-2xl flex flex-col items-center justify-center px-4 text-center"
+              className={`absolute inset-0 rounded-2xl bg-gradient-to-br from-zinc-900 via-black to-zinc-900 shadow-2xl flex flex-col items-center justify-center px-4 text-center ${
+                main ? 'border-4 border-amber-300' : 'border-4 border-amber-400/50'
+              }`}
               style={{ backfaceVisibility: 'hidden' }}
             >
-              <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-amber-400 mb-4 animate-pulse" />
+              <Trophy className={`text-amber-400 mb-4 animate-pulse ${main ? 'w-14 h-14 sm:w-16 sm:h-16' : 'w-10 h-10 sm:w-12 sm:h-12'}`} />
               <p className="text-amber-300/70 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] mb-2">
-                Award
+                {main ? 'Main Award' : 'Award'}
               </p>
               <h3 className="text-lg sm:text-2xl font-black text-white uppercase tracking-wide leading-tight">
-                {award.name}
+                {displayName}
               </h3>
               <p className="mt-6 text-5xl font-black text-amber-400/30 select-none">?</p>
             </div>
@@ -231,7 +277,7 @@ function AwardSegment({
                   cardTheme="whiteGold"
                 />
               ) : (
-                <div className="w-56 sm:w-64 aspect-[741/1186] rounded-2xl bg-gradient-to-br from-zinc-800 to-black border-4 border-white/10 flex items-center justify-center px-6 text-center">
+                <div className={`aspect-[741/1186] rounded-2xl bg-gradient-to-br from-zinc-800 to-black border-4 border-white/10 flex items-center justify-center px-6 text-center ${main ? 'w-64 sm:w-80' : 'w-48 sm:w-56'}`}>
                   <p className="text-white/50 text-sm">No votes were cast for this award</p>
                 </div>
               )}
@@ -383,8 +429,8 @@ export default function TrophyRoomCinematic({
             key={data.award.id}
             onClick={() => viewSegment(i)}
             disabled={i > activeIndex}
-            title={i <= activeIndex ? data.award.name : `Locked — finish award ${activeIndex + 1} first`}
-            aria-label={`View ${data.award.name}`}
+            title={i <= activeIndex ? formatAwardName(data.award.name) : `Locked — finish award ${activeIndex + 1} first`}
+            aria-label={`View ${formatAwardName(data.award.name)}`}
             className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all ${
               i === viewingIndex
                 ? 'bg-amber-400 scale-125'

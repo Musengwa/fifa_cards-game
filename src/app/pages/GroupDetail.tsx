@@ -15,6 +15,7 @@ import {
 import { Checkbox } from '../components/ui/checkbox';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { getCurrentUserId } from '../lib/auth';
+import { isMainAward, formatAwardName } from '../lib/awards';
 import { toast } from 'sonner';
 import Showroom from '../components/Showroom';
 import TrophyRoomCinematic from '../components/TrophyRoomCinematic';
@@ -1071,7 +1072,12 @@ export default function GroupDetail() {
                 <div className="space-y-4 sm:space-y-6">
                   {group.awardCategories.map((award) => (
                     <div key={award.id} className="space-y-2">
-                      <Label className="text-sm sm:text-base">{award.name}</Label>
+                      <Label className="text-sm sm:text-base flex items-center gap-1.5">
+                        {formatAwardName(award.name)}
+                        {isMainAward(award.name) && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide text-amber-500">Main</span>
+                        )}
+                      </Label>
                       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
                         {otherMembers.map((member) => (
                           <MemberTile
@@ -1108,7 +1114,12 @@ export default function GroupDetail() {
                       return (
                         <Card key={award.id}>
                           <CardHeader>
-                            <CardTitle className="text-base">{award.name}</CardTitle>
+                            <CardTitle className="text-base flex items-center gap-1.5">
+                              {formatAwardName(award.name)}
+                              {isMainAward(award.name) && (
+                                <span className="text-[10px] font-bold uppercase tracking-wide text-amber-500">Main</span>
+                              )}
+                            </CardTitle>
                           </CardHeader>
                           <CardContent>
                             {sortedVotes.length === 0 ? (

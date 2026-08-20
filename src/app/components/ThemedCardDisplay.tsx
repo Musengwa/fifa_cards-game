@@ -4,6 +4,7 @@ import { Card, CardContent } from './ui/card';
 import { Trophy, Award, Star, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
+import { formatAwardName } from '../lib/awards';
 
 interface Member {
   id: string;
@@ -241,7 +242,7 @@ export default function ThemedCardDisplay({ members, attributes, ratings, votes,
                     <Star className={`w-8 h-8 sm:w-12 sm:h-12 mx-auto ${currentTheme.accent}`} />
                   </div>
                   <h3 className={`text-sm sm:text-lg font-bold ${theme === 'gold' ? 'text-gray-600' : 'text-white/70'} mb-1 sm:mb-2`}>
-                    {award.name}
+                    {formatAwardName(award.name)}
                   </h3>
                   <p className={`text-xl sm:text-3xl font-bold ${theme === 'gold' ? 'text-gray-800' : 'text-white'}`}>
                     {winnerMember?.name}

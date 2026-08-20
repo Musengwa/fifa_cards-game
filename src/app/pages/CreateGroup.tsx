@@ -4,8 +4,10 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { ArrowLeft, Plus, X } from 'lucide-react';
+import { Checkbox } from '../components/ui/checkbox';
+import { ArrowLeft, Plus, X, Star } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
+import { isMainAward, formatAwardName } from '../lib/awards';
 import { toast } from 'sonner';
 
 export default function CreateGroup() {
@@ -24,6 +26,7 @@ export default function CreateGroup() {
     { id: '2', name: 'Most Improved' },
   ]);
   const [newAward, setNewAward] = useState('');
+  const [newAwardIsMain, setNewAwardIsMain] = useState(false);
 
   const addAttribute = () => {
     if (newAttribute.trim()) {
@@ -41,11 +44,13 @@ export default function CreateGroup() {
 
   const addAward = () => {
     if (newAward.trim()) {
+      const name = newAward.trim() + (newAwardIsMain ? ' (main)' : '');
       setAwardCategories([
         ...awardCategories,
-        { id: Date.now().toString(), name: newAward.trim() },
+        { id: Date.now().toString(), name },
       ]);
       setNewAward('');
+      setNewAwardIsMain(false);
     }
   };
 
@@ -198,22 +203,38 @@ export default function CreateGroup() {
                     <Plus className="w-4 h-4" />
                   </Button>
                 </div>
+                <label className="flex items-center gap-2 text-sm text-gray-500">
+                  <Checkbox
+                    checked={newAwardIsMain}
+                    onCheckedChange={(checked) => setNewAwardIsMain(checked === true)}
+                  />
+                  Main award (e.g. Ballon d'Or) — shown bigger, with extra confetti
+                </label>
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {awardCategories.map((award) => (
-                    <div
-                      key={award.id}
-                      className="flex items-center gap-2 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full"
-                    >
-                      <span>{award.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeAward(award.id)}
-                        className="hover:text-red-600"
+                  {awardCategories.map((award) => {
+                    const main = isMainAward(award.name);
+                    return (
+                      <div
+                        key={award.id}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-full ${
+                          main
+                            ? 'bg-amber-200 text-amber-900 ring-2 ring-amber-400'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
                       >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                        {main && <Star className="w-3.5 h-3.5 fill-amber-600 text-amber-600" />}
+                        <span>{formatAwardName(award.name)}</span>
+                        {main && <span className="text-[10px] font-bold uppercase tracking-wide">Main</span>}
+                        <button
+                          type="button"
+                          onClick={() => removeAward(award.id)}
+                          className="hover:text-red-600"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

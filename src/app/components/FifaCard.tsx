@@ -4,9 +4,9 @@ import { motion } from 'motion/react';
 import { downloadAsPng } from '../lib/download';
 import { StarRatingDisplay } from './StarRating';
 import { toast } from 'sonner';
-import greenShieldBg from './card-images/green.png';
-import purpleShieldBg from './card-images/Clipped_image_20260805_155650.png';
-import goldShieldBg from './card-images/Clipped_image_20260805_180319.png';
+const greenShieldBg = new URL('./card-images/green.png', import.meta.url).href;
+const purpleShieldBg = new URL('./card-images/Clipped_image_20260805_155650.png', import.meta.url).href;
+const goldShieldBg = new URL('./card-images/Clipped_image_20260805_180319.png', import.meta.url).href;
 
 export type CardTheme = 'greenOrange' | 'whiteGold' | 'blackPurple';
 

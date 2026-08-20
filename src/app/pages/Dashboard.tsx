@@ -6,9 +6,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import {
-  Plus, LogOut, Users, Calendar, User, Bell,
+  Plus, LogOut, Users, Calendar, User, Bell, Menu,
   CheckCircle2, Clock, CreditCard, Check, Lock, Shield, Globe2, Trash2, AlertTriangle,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '../components/ui/dropdown-menu';
 import { motion } from 'motion/react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { signOut, getSession, isAuthenticated, updateUserProfile, deleteAccount } from '../lib/auth';
@@ -59,18 +66,26 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      // Refreshes the token in localStorage if it's stale; a truly invalid/missing
-      // token is caught by the 401 check below, not here — getSession() can return
-      // null right after signup even though the token is valid, which previously
-      // sent users straight back to '/' and into a redirect loop with the landing page.
-      await getSession();
+      // Try to refresh the SDK/session, but timeout if the network/backend is unresponsive.
+      const withTimeout = <T,>(p: Promise<T>, ms = 8000) =>
+        new Promise<T>((resolve, reject) => {
+          const t = setTimeout(() => reject(new Error('timeout')), ms);
+          p.then((v) => (clearTimeout(t), resolve(v))).catch((e) => (clearTimeout(t), reject(e)));
+        });
 
-      // Fire all three requests concurrently instead of waterfalling them —
-      // sequential awaits here were what made the loading screen drag out.
+      await withTimeout(getSession(), 8000).catch((err) => {
+        console.warn('getSession timed out or failed:', err);
+      });
+
+      // Fire all three requests concurrently but guard against a hung network.
+      const profilePromise = fetch(`${API_BASE_URL}/user/profile`, { headers: getAuthHeaders() });
+      const groupsPromise = fetch(`${API_BASE_URL}/user/groups`, { headers: getAuthHeaders() });
+      const invitesPromise = fetch(`${API_BASE_URL}/invite/pending`, { headers: getAuthHeaders() }).catch(() => null);
+
       const [profileRes, groupsRes, invitesRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/user/profile`, { headers: getAuthHeaders() }),
-        fetch(`${API_BASE_URL}/user/groups`, { headers: getAuthHeaders() }),
-        fetch(`${API_BASE_URL}/invite/pending`, { headers: getAuthHeaders() }).catch(() => null),
+        withTimeout(profilePromise, 8000),
+        withTimeout(groupsPromise, 8000),
+        withTimeout(invitesPromise, 8000).catch(() => null),
       ]);
 
       if (profileRes.status === 401) { navigate('/'); return; }
@@ -86,7 +101,7 @@ export default function Dashboard() {
         if (invitesRes.ok) setPendingInviteCount(invitesData.invites?.length || 0);
       }
     } catch {
-      toast.error('Failed to load data');
+      toast.error('Failed to load data (server timeout or network error)');
     } finally {
       setLoading(false);
     }
@@ -208,202 +223,38 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
-            {/* Invites bell */}
-            <div className="relative">
-              <Button onClick={() => navigate('/invites')} variant="outline" size="sm">
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-                {pendingInviteCount > 0 && <span className="ml-1 sm:hidden text-xs">{pendingInviteCount}</span>}
-              </Button>
-              {pendingInviteCount > 0 && (
-                <div className="hidden sm:flex absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 items-center justify-center">
-                  {pendingInviteCount}
-                </div>
-              )}
-            </div>
-
-            {/* Profile */}
-            <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <User className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Profile</span>
+          <div className="w-full sm:w-auto flex items-center justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Open menu">
+                  <Menu className="w-5 h-5" />
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Your Profile</DialogTitle>
-                  <DialogDescription>Update your profile picture</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="flex flex-col items-center gap-4">
-                    {userProfile?.profilePicUrl ? (
-                      <img src={userProfile.profilePicUrl} alt={userProfile.name} className="w-32 h-32 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center">
-                        <User className="w-16 h-16 text-gray-600" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input
-                      value={nameInput}
-                      onChange={(e) => setNameInput(e.target.value)}
-                      onBlur={handleNameBlur}
-                      disabled={savingName}
-                      placeholder="Your name"
-                      maxLength={50}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Upload Profile Picture</Label>
-                    <Input type="file" accept="image/*" onChange={handleProfilePicUpload} disabled={uploadingPic} />
-                    {uploadingPic && <p className="text-sm text-gray-500">Uploading…</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Club</Label>
-                    <button
-                      type="button"
-                      onClick={() => setClubPickerOpen(true)}
-                      disabled={savingClub}
-                      className="w-full h-10 px-3 rounded-md border border-input flex items-center gap-2 text-sm disabled:opacity-60"
-                    >
-                      {userProfile?.clubLogoUrl ? (
-                        <img src={userProfile.clubLogoUrl} alt="" aria-hidden className="w-6 h-6 object-contain shrink-0" />
-                      ) : (
-                        <Shield className="w-5 h-5 shrink-0 opacity-40" />
-                      )}
-                      <span className="truncate">
-                        {savingClub ? 'Saving…' : userProfile?.club || 'Select club…'}
-                      </span>
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nationality</Label>
-                    <button
-                      type="button"
-                      onClick={() => setNationPickerOpen(true)}
-                      disabled={savingNation}
-                      className="w-full h-10 px-3 rounded-md border border-input flex items-center gap-2 text-sm disabled:opacity-60"
-                    >
-                      {userProfile?.nationalityFlagUrl ? (
-                        <img src={userProfile.nationalityFlagUrl} alt="" aria-hidden className="w-6 h-4 object-cover rounded-[1px] shrink-0" />
-                      ) : (
-                        <Globe2 className="w-5 h-5 shrink-0 opacity-40" />
-                      )}
-                      <span className="truncate">
-                        {savingNation ? 'Saving…' : userProfile?.nationality || 'Select nationality…'}
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Danger zone */}
-                  <div className="pt-2 border-t space-y-2">
-                    <Label className="text-red-600">Danger Zone</Label>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setProfileDialogOpen(false);
-                        setDeleteAccountConfirmed(false);
-                        setDeleteAccountOpen(true);
-                      }}
-                      className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete Account
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* Delete Account Confirmation Dialog */}
-            <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2 text-red-600">
-                    <AlertTriangle className="w-5 h-5" />
-                    Delete Account — This Cannot Be Undone
-                  </DialogTitle>
-                  <DialogDescription>
-                    This permanently deletes your account. Groups you created are deleted for everyone;
-                    groups you only belong to will just lose your membership and ratings.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-2">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800 space-y-1">
-                    <p>• Your profile and login will be <strong>permanently deleted</strong></p>
-                    <p>• Any groups you created will be deleted for all members</p>
-                    <p>• Your ratings and votes will be removed from other groups</p>
-                    <p>• This action cannot be reversed</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Checkbox
-                      id="delete-account-confirm"
-                      checked={deleteAccountConfirmed}
-                      onCheckedChange={(checked) => setDeleteAccountConfirmed(!!checked)}
-                    />
-                    <label htmlFor="delete-account-confirm" className="text-sm font-medium cursor-pointer">
-                      I understand this action is permanent and cannot be reversed
-                    </label>
-                  </div>
-                </div>
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setDeleteAccountOpen(false)}
-                    disabled={deletingAccount}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={handleDeleteAccount}
-                    disabled={!deleteAccountConfirmed || deletingAccount}
-                  >
-                    {deletingAccount ? 'Deleting…' : 'Delete Account Forever'}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            <ClubPicker
-              open={clubPickerOpen}
-              onOpenChange={setClubPickerOpen}
-              onSelect={handleSelectClub}
-            />
-            <NationPicker
-              open={nationPickerOpen}
-              onOpenChange={setNationPickerOpen}
-              onSelect={handleSelectNation}
-            />
-
-            {/* Create Card — full page */}
-            <Button
-              onClick={() => navigate('/create-card')}
-              size="sm"
-              variant="outline"
-              className="border-purple-400/60 text-purple-200 hover:bg-purple-900/20 hover:text-purple-100"
-            >
-              <CreditCard className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Create Card</span>
-            </Button>
-
-            {/* Create Group */}
-            <Button onClick={() => navigate('/create-group')} size="sm" className="flex-1 sm:flex-none">
-              <Plus className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Create Group</span>
-              <span className="sm:hidden">Create</span>
-            </Button>
-
-            {/* Sign Out */}
-            <Button onClick={handleSignOut} variant="outline" size="sm">
-              <LogOut className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Sign Out</span>
-            </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate('/invites')}>
+                  <Bell className="size-4" />
+                  Invites
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setProfileDialogOpen(true)}>
+                  <User className="size-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/create-card')}>
+                  <CreditCard className="size-4" />
+                  Create Card
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/create-group')}>
+                  <Plus className="size-4" />
+                  Create Group
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="size-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

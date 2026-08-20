@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Trophy, Lock, BarChart2 } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
+import { formatAwardName } from '../lib/awards';
 import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 import {
@@ -106,7 +107,7 @@ export default function Analytics() {
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
-    return { award: award.name, awardId: award.id, votes: topVotes };
+    return { award: formatAwardName(award.name), awardId: award.id, votes: topVotes };
   });
 
   const chartTooltipStyle = {
@@ -261,7 +262,7 @@ export default function Analytics() {
             <div className="space-y-6">
               {group.awardCategories.map((award) => (
                 <div key={award.id} className="border-b border-slate-700/50 pb-4 last:border-b-0">
-                  <h4 className="font-semibold text-slate-300 text-sm uppercase tracking-wide mb-3">{award.name}</h4>
+                  <h4 className="font-semibold text-slate-300 text-sm uppercase tracking-wide mb-3">{formatAwardName(award.name)}</h4>
                   <div className="space-y-2">
                     {allVoteRecords.map((record) => {
                       const votedFor = record.votes[award.id];
