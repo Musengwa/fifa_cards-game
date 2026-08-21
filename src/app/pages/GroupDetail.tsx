@@ -16,6 +16,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { getCurrentUserId } from '../lib/auth';
 import { isMainAward, formatAwardName } from '../lib/awards';
+import { useAppTheme } from '../lib/theme';
 import { toast } from 'sonner';
 import Showroom from '../components/Showroom';
 import TrophyRoomCinematic from '../components/TrophyRoomCinematic';
@@ -90,6 +91,7 @@ function MemberTile({
 export default function GroupDetail() {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const { tokens } = useAppTheme();
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [ratings, setRatings] = useState<any>({});
@@ -492,9 +494,13 @@ export default function GroupDetail() {
   // POST-SESSION MODE: Show completely different UI with Showroom, Trophy Room, and Analysis
   if (group.sessionEnded) {
     return (
-      <div className="min-h-screen bg-slate-950">
+      <div
+        className={`h-screen flex flex-col bg-gradient-to-br -mt-20 pt-20 ${
+          postSessionTab === 'trophies' ? 'from-black via-zinc-950 to-black' : tokens.bgGradient
+        }`}
+      >
         {/* Post-Session Header */}
-        <div className="bg-black/40 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
+        <div className="shrink-0">
           <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 sm:gap-4">
@@ -508,7 +514,7 @@ export default function GroupDetail() {
                 </Button>
                 <div>
                   <h1 className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
+                    <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 ${tokens.accentText}`} />
                     {group.name}
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-300">Session Ended • Results Showcase</p>
@@ -559,7 +565,7 @@ export default function GroupDetail() {
         </div>
 
         {/* Post-Session Content */}
-        <div>
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {postSessionTab === 'showroom' && (
             <Showroom
               members={members}

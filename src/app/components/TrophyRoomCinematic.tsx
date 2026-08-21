@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { Trophy, Sparkles, ChevronDown, User as UserIcon } from 'lucide-react';
 import FifaCard from './FifaCard';
 import { isMainAward, formatAwardName } from '../lib/awards';
+import { useAppTheme } from '../lib/theme';
 
 const MAIN_AWARD_COLORS = ['#facc15', '#fbbf24', '#f59e0b', '#fde68a', '#ffffff'];
 
@@ -124,6 +125,7 @@ function AwardSegment({
   status: SegmentStatus;
   onNext: () => void;
 }) {
+  const { tokens } = useAppTheme();
   const [revealed, setRevealed] = useState(status === 'completed');
   const [showNext, setShowNext] = useState(false);
   const main = isMainAward(award.name);
@@ -173,48 +175,109 @@ function AwardSegment({
 
   const accent = ACCENTS[index % ACCENTS.length];
 
+  // Built once and embedded in two different spots below — grouped into the
+  // side column on desktop (next to the stage) but placed after the stage on
+  // mobile (where there's no room for a side column), without duplicating JSX.
+  const winnerSummaryNode = revealed && winner?.member && (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="text-center lg:text-left"
+    >
+      <p className="inline-block bg-yellow-400 text-black px-3 py-0.5 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-lg mb-1.5">
+        Winner
+      </p>
+      <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white drop-shadow-lg leading-tight">{winner.member.name}</h3>
+      <p className="text-amber-300 text-sm sm:text-base font-semibold mt-0.5">
+        {winner.votes} vote{winner.votes !== 1 ? 's' : ''}
+      </p>
+      {(runnerUp?.member || thirdPlace?.member) && (
+        <div className="flex lg:flex-col justify-center lg:justify-start gap-3 lg:gap-0.5 mt-2 text-xs text-white/60">
+          {runnerUp?.member && (
+            <span>2nd — {runnerUp.member.name} ({runnerUp.votes})</span>
+          )}
+          {thirdPlace?.member && (
+            <span>3rd — {thirdPlace.member.name} ({thirdPlace.votes})</span>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+
+  const nextControlNode = status === 'active' && showNext && (
+    index < total - 1 ? (
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={onNext}
+        className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-full border border-white/20 backdrop-blur-md transition-colors"
+      >
+        Next Award
+        <ChevronDown className="w-4 h-4 animate-bounce" />
+      </motion.button>
+    ) : (
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-amber-300/80 text-xs sm:text-sm flex items-center gap-2"
+      >
+        <Sparkles className="w-4 h-4" /> That's every award — champions forever <Sparkles className="w-4 h-4" />
+      </motion.p>
+    )
+  );
+
   return (
     <section
-      className={`relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden px-4 py-10 bg-gradient-to-br ${accent}`}
+      className={`relative h-full w-full overflow-hidden bg-gradient-to-br ${accent}`}
     >
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="w-[24rem] h-[24rem] sm:w-[32rem] sm:h-[32rem] bg-amber-500/10 rounded-full blur-3xl" />
       </div>
 
-      {/* Heading */}
-      <div className="relative z-20 text-center mb-4 sm:mb-6">
-        <p className="text-amber-300/80 text-xs sm:text-sm font-bold uppercase tracking-[0.35em] mb-2">
-          Award {index + 1} of {total}
-        </p>
-        {main && (
-          <p className="inline-flex items-center gap-1.5 text-amber-300 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] mb-2 px-3 py-1 rounded-full border border-amber-400/40 bg-amber-400/10">
-            <Sparkles className="w-3 h-3" /> Main Award
-          </p>
-        )}
-        {!revealed ? (
-          <motion.h2
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`font-black text-white tracking-tight ${main ? 'text-4xl sm:text-6xl' : 'text-3xl sm:text-5xl'}`}
-          >
-            Who is it going to be?
-          </motion.h2>
-        ) : (
-          <motion.h2
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-400 ${
-              main ? 'text-3xl sm:text-5xl' : 'text-2xl sm:text-4xl'
-            }`}
-          >
-            {displayName}
-          </motion.h2>
-        )}
-      </div>
+      <div className="relative z-10 h-full w-full flex flex-col lg:flex-row items-center justify-center gap-2 sm:gap-3 lg:gap-10 px-4 sm:px-6 lg:px-12 py-3 sm:py-4">
+        {/* Info column: label, heading, and — on desktop only — the winner summary
+            and next control, grouped beside the stage instead of stacked below it. */}
+        <div className="z-20 shrink-0 flex flex-col items-center lg:items-start text-center lg:text-left gap-2 lg:w-72 xl:w-80">
+          <div>
+            <p className="text-amber-300/80 text-xs sm:text-sm font-bold uppercase tracking-[0.35em] mb-1.5">
+              Award {index + 1} of {total}
+            </p>
+            {main && (
+              <p className="inline-flex items-center gap-1.5 text-amber-300 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] mb-1.5 px-3 py-1 rounded-full border border-amber-400/40 bg-amber-400/10">
+                <Sparkles className="w-3 h-3" /> Main Award
+              </p>
+            )}
+            {!revealed ? (
+              <motion.h2
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`font-black text-white tracking-tight ${main ? 'text-3xl sm:text-4xl lg:text-5xl' : 'text-2xl sm:text-3xl lg:text-4xl'}`}
+              >
+                Who is it going to be?
+              </motion.h2>
+            ) : (
+              <motion.h2
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-400 ${
+                  main ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-xl sm:text-2xl lg:text-3xl'
+                }`}
+              >
+                {displayName}
+              </motion.h2>
+            )}
+          </div>
 
-      {/* Stage: floating candidates + the flip card share this stacking context */}
-      <div className="relative z-10 w-full max-w-3xl flex-1 flex items-center justify-center min-h-[380px] sm:min-h-[440px]">
-        {!revealed &&
+          <div className="hidden lg:flex flex-col items-start gap-4">
+            {winnerSummaryNode}
+            {nextControlNode}
+          </div>
+        </div>
+
+        {/* Stage: floating candidates + the flip card share this stacking context */}
+        <div className="relative z-10 flex-1 min-h-0 w-full max-w-xl lg:max-w-none h-full flex items-center justify-center">
+          {!revealed &&
           candidates.map((member, i) => (
             <motion.div
               key={member.id}
@@ -240,10 +303,12 @@ function AwardSegment({
             </motion.div>
           ))}
 
-        {/* Flip card: mystery back → winner's FIFA card front — bigger stage for the main award */}
+        {/* Flip card: mystery back → winner's FIFA card front — bigger stage for the main award.
+            Width-only sizing (height follows from aspectRatio) so it never needs to compete
+            with an explicit height — at these widths it comfortably clears the vertical budget. */}
         <div className="relative z-10" style={{ perspective: 1500 }}>
           <motion.div
-            className={`relative ${main ? 'w-64 sm:w-80' : 'w-48 sm:w-56'}`}
+            className={`relative ${main ? 'w-56 sm:w-64 lg:w-72' : 'w-44 sm:w-48 lg:w-52'}`}
             style={{ transformStyle: 'preserve-3d', aspectRatio: '741 / 1186' }}
             animate={{ rotateY: revealed ? 180 : 0 }}
             transition={{ duration: 1.1, ease: 'easeInOut' }}
@@ -274,10 +339,10 @@ function AwardSegment({
                   attributes={attributes}
                   ratings={ratings[winner.member.id] || {}}
                   peerRating={starRatings?.[winner.member.id] || null}
-                  cardTheme="whiteGold"
+                  cardTheme={tokens.cardTheme}
                 />
               ) : (
-                <div className={`aspect-[741/1186] rounded-2xl bg-gradient-to-br from-zinc-800 to-black border-4 border-white/10 flex items-center justify-center px-6 text-center ${main ? 'w-64 sm:w-80' : 'w-48 sm:w-56'}`}>
+                <div className={`aspect-[741/1186] rounded-2xl bg-gradient-to-br from-zinc-800 to-black border-4 border-white/10 flex items-center justify-center px-6 text-center ${main ? 'w-56 sm:w-64 lg:w-72' : 'w-44 sm:w-48 lg:w-52'}`}>
                   <p className="text-white/50 text-sm">No votes were cast for this award</p>
                 </div>
               )}
@@ -307,58 +372,14 @@ function AwardSegment({
             ))}
           </div>
         )}
+        </div>
+
+        {/* Winner summary + next control, mobile only — desktop renders these in the side column instead */}
+        <div className="lg:hidden z-20 shrink-0 flex flex-col items-center gap-2">
+          {winnerSummaryNode}
+          {nextControlNode}
+        </div>
       </div>
-
-      {/* Winner + runner-up summary */}
-      {revealed && winner?.member && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="relative z-20 text-center mt-4 sm:mt-6"
-        >
-          <p className="inline-block bg-yellow-400 text-black px-4 py-1 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider shadow-lg mb-2">
-            Winner
-          </p>
-          <h3 className="text-2xl sm:text-4xl font-black text-white drop-shadow-lg">{winner.member.name}</h3>
-          <p className="text-amber-300 text-base sm:text-lg font-semibold mt-1">
-            {winner.votes} vote{winner.votes !== 1 ? 's' : ''}
-          </p>
-          {(runnerUp?.member || thirdPlace?.member) && (
-            <div className="flex justify-center gap-6 mt-3 text-xs sm:text-sm text-white/60">
-              {runnerUp?.member && (
-                <span>2nd — {runnerUp.member.name} ({runnerUp.votes})</span>
-              )}
-              {thirdPlace?.member && (
-                <span>3rd — {thirdPlace.member.name} ({thirdPlace.votes})</span>
-              )}
-            </div>
-          )}
-        </motion.div>
-      )}
-
-      {/* Advance to the next segment — only the currently-active segment offers this */}
-      {status === 'active' &&
-        showNext &&
-        (index < total - 1 ? (
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={onNext}
-            className="relative z-20 mt-6 sm:mt-8 inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-5 py-2.5 rounded-full border border-white/20 backdrop-blur-md transition-colors"
-          >
-            Next Award
-            <ChevronDown className="w-4 h-4 animate-bounce" />
-          </motion.button>
-        ) : (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="relative z-20 mt-6 sm:mt-8 text-amber-300/80 text-sm sm:text-base flex items-center gap-2"
-          >
-            <Sparkles className="w-4 h-4" /> That's every award — champions forever <Sparkles className="w-4 h-4" />
-          </motion.p>
-        ))}
     </section>
   );
 }
@@ -411,7 +432,7 @@ export default function TrophyRoomCinematic({
 
   if (awardWinners.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white/60">
+      <div className="h-full flex items-center justify-center text-white/60">
         No award categories in this group
       </div>
     );
@@ -420,7 +441,7 @@ export default function TrophyRoomCinematic({
   const current = awardWinners[viewingIndex];
 
   return (
-    <div className="relative w-full h-screen overflow-y-auto bg-black">
+    <div className="relative w-full h-full overflow-y-auto">
       {/* Side dots — only awards already reached are selectable; scrolling never
           reveals what's ahead since nothing beyond the current segment is mounted. */}
       <div className="fixed right-3 sm:right-5 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5 sm:gap-3">
@@ -449,6 +470,7 @@ export default function TrophyRoomCinematic({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.35 }}
+          className="h-full"
         >
           <AwardSegment
             index={viewingIndex}

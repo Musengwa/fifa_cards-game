@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { ArrowLeft, Trophy, Lock, BarChart2 } from 'lucide-react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { formatAwardName } from '../lib/awards';
+import { useAppTheme } from '../lib/theme';
 import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 import {
@@ -32,6 +33,7 @@ interface VoteRecord {
 export default function Analytics() {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const { tokens } = useAppTheme();
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [ratings, setRatings] = useState<any>({});
@@ -118,7 +120,7 @@ export default function Analytics() {
   const axisStyle = { fill: '#94a3b8', fontSize: 11 };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 sm:p-6">
+    <div className={`min-h-screen bg-gradient-to-br ${tokens.bgGradient} p-3 sm:p-6 -mt-20 pt-20`}>
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}

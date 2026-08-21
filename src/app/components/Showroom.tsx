@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from './ui/button';
-import { Download, Palette, Trophy, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { downloadElement } from '../lib/download';
 import { toast } from 'sonner';
 import FifaCard, { CardTheme } from './FifaCard';
+import { useAppTheme } from '../lib/theme';
 
 interface Member {
   id: string;
@@ -129,7 +130,7 @@ function MemberCarousel({
   return (
     <div className="relative">
       {/* Rank badge */}
-      <div className="flex justify-center mb-4">
+      <div className="flex justify-center mb-2">
         {rank === 1 ? (
           <div className="relative">
             <div className={`absolute inset-0 ${accentBg} rounded-full blur-xl opacity-60 animate-pulse`} />
@@ -150,8 +151,8 @@ function MemberCarousel({
 
       {/* Stage */}
       <div
-        className="relative flex items-center justify-center mx-auto"
-        style={{ perspective: 1400, minHeight: 480 }}
+        className="relative flex items-center justify-center mx-auto min-h-[420px]"
+        style={{ perspective: 1400 }}
       >
         {total > 1 &&
           members.map((m, i) => {
@@ -213,7 +214,7 @@ function MemberCarousel({
       </div>
 
       {/* Info row */}
-      <div className="text-center mt-6">
+      <div className="text-center mt-2">
         <p className="text-white/60 text-sm font-semibold tracking-wide">
           {rank} / {total}
         </p>
@@ -298,7 +299,7 @@ const themes: Record<
 };
 
 export default function Showroom({ members, attributes, ratings, starRatings = {}, votes, awardCategories }: ShowroomProps) {
-  const [theme, setTheme] = useState<Theme>('greenOrange');
+  const { theme } = useAppTheme();
   const [downloading, setDownloading] = useState(false);
   const showroomRef = useRef<HTMLDivElement>(null);
 
@@ -340,29 +341,14 @@ export default function Showroom({ members, attributes, ratings, starRatings = {
   };
 
   return (
-    <div ref={showroomRef} className={`min-h-screen bg-gradient-to-br ${t.bgGradient} p-4 sm:p-8`}>
-      <div className="max-w-7xl mx-auto">
+    <div
+      ref={showroomRef}
+      className={`h-full bg-gradient-to-br ${t.bgGradient} flex flex-col p-3 sm:p-4 lg:p-6 overflow-hidden`}
+    >
+      <div className="max-w-7xl mx-auto w-full flex flex-col flex-1 min-h-0">
 
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-10">
-          {/* Theme switcher */}
-          <div className={`flex gap-1 sm:gap-2 p-1.5 rounded-full bg-black/20 backdrop-blur-md border ${t.cardBorder}`}>
-            {(Object.keys(themes) as Theme[]).map((key) => (
-              <button
-                key={key}
-                onClick={() => setTheme(key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all ${
-                  theme === key
-                    ? `${themes[key].btnActive} text-white shadow-lg scale-105`
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <Palette className="w-3.5 h-3.5" />
-                {themes[key].name}
-              </button>
-            ))}
-          </div>
-
+        <div className="flex justify-end items-center gap-4 mb-2 sm:mb-3 shrink-0">
           <Button
             onClick={handleDownloadShowroom}
             disabled={downloading}
@@ -373,9 +359,8 @@ export default function Showroom({ members, attributes, ratings, starRatings = {
           </Button>
         </div>
 
-      
-        {/* Roster deck — one card at a time */}
-        <div className="mb-12">
+        {/* Roster deck — one card at a time, vertically centered in whatever space remains */}
+        <div className="flex-1 min-h-0 flex items-center justify-center">
           {membersWithStats.length === 0 ? (
             <p className={`text-center ${t.textSecondary}`}>No members yet</p>
           ) : (

@@ -15,6 +15,7 @@ import ClubPicker, { Club } from '../components/ClubPicker';
 import NationPicker, { Nation } from '../components/NationPicker';
 import { downloadAsPng } from '../lib/download';
 import { isAuthenticated, updateUserProfile } from '../lib/auth';
+import { useAppTheme } from '../lib/theme';
 import { toast } from 'sonner';
 
 interface Stat {
@@ -62,6 +63,7 @@ function StarPicker({ value, onChange, color }: { value: number; onChange: (v: n
 
 export default function CreateCard() {
   const navigate = useNavigate();
+  const { tokens } = useAppTheme();
   const cardRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,7 +79,7 @@ export default function CreateCard() {
   const [skillMoves, setSkillMoves] = useState(3);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [stats, setStats] = useState<Stat[]>(DEFAULT_STATS);
-  const [cardTheme, setCardTheme] = useState<CardTheme>('greenOrange');
+  const [cardTheme, setCardTheme] = useState<CardTheme>(tokens.cardTheme);
   const [downloading, setDownloading] = useState(false);
 
   const t = cardThemeStyles[cardTheme];

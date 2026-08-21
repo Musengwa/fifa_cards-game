@@ -24,6 +24,7 @@ import ClubPicker, { Club } from '../components/ClubPicker';
 import NationPicker, { Nation } from '../components/NationPicker';
 import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
+import { useAppTheme } from '../lib/theme';
 
 interface Group {
   id: string;
@@ -39,6 +40,7 @@ interface Group {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { tokens } = useAppTheme();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -219,7 +221,7 @@ export default function Dashboard() {
             )}
             <div className="min-w-0">
               <h1 className="text-2xl sm:text-4xl font-bold text-white mb-1">Dashboard</h1>
-              <p className="text-sm sm:text-base text-green-100 truncate">Welcome back, {userProfile?.name || 'User'}!</p>
+              <p className={`text-sm sm:text-base truncate ${tokens.accentTextSecondary}`}>Welcome back, {userProfile?.name || 'User'}!</p>
             </div>
           </div>
 

@@ -7,11 +7,13 @@ import { Label } from '../components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Trophy, Users, Award, TrendingUp } from 'lucide-react';
 import { signIn, signUp, getSession } from '../lib/auth';
+import { useAppTheme } from '../lib/theme';
 import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { tokens } = useAppTheme();
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -101,34 +103,34 @@ export default function LandingPage() {
         <div className="text-white space-y-6">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <Trophy className="w-12 h-12 text-yellow-400" />
+              <Trophy className={`w-12 h-12 ${tokens.accentText}`} />
               <h1 className="text-5xl font-bold">FIFA Card Rank</h1>
             </div>
-            <p className="text-xl text-green-100">
+            <p className={`text-xl ${tokens.accentTextSecondary}`}>
               Create custom FIFA-style ranking cards for your friends and vote for Ballon d'Or style awards!
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 mt-8">
             <div className="flex items-start gap-3">
-              <Users className="w-6 h-6 text-yellow-400 mt-1" />
+              <Users className={`w-6 h-6 mt-1 ${tokens.accentText}`} />
               <div>
                 <h3 className="font-semibold text-lg">Create Groups</h3>
-                <p className="text-green-100">Set up ranking events with custom attributes for your squad</p>
+                <p className={tokens.accentTextSecondary}>Set up ranking events with custom attributes for your squad</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <Award className="w-6 h-6 text-yellow-400 mt-1" />
+              <Award className={`w-6 h-6 mt-1 ${tokens.accentText}`} />
               <div>
                 <h3 className="font-semibold text-lg">Custom Awards</h3>
-                <p className="text-green-100">Vote for personalized awards like "Best Dressed" or "MVP"</p>
+                <p className={tokens.accentTextSecondary}>Vote for personalized awards like "Best Dressed" or "MVP"</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
-              <TrendingUp className="w-6 h-6 text-yellow-400 mt-1" />
+              <TrendingUp className={`w-6 h-6 mt-1 ${tokens.accentText}`} />
               <div>
                 <h3 className="font-semibold text-lg">View Analytics</h3>
-                <p className="text-green-100">See rankings and voting results when the creator reveals them</p>
+                <p className={tokens.accentTextSecondary}>See rankings and voting results when the creator reveals them</p>
               </div>
             </div>
           </div>
