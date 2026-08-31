@@ -10,6 +10,7 @@ import Analytics from "./pages/Analytics";
 import CreateCard from "./pages/CreateCard";
 import TestConnection from "./pages/TestConnection";
 import NotFound from "./pages/NotFound";
+import AuthRequired from "./components/AuthRequired";
 
 export const router = createBrowserRouter([
   {
@@ -17,14 +18,14 @@ export const router = createBrowserRouter([
     Component: Root,
     children: [
       { index: true, Component: LandingPage },
-      { path: "dashboard", Component: Dashboard },
-      { path: "create-group", Component: CreateGroup },
-      { path: "group/:groupId", Component: GroupDetail },
-      { path: "group/:groupId/analytics", Component: Analytics },
+      { path: "dashboard", element: <AuthRequired><Dashboard /></AuthRequired> },
+      { path: "create-group", element: <AuthRequired><CreateGroup /></AuthRequired> },
+      { path: "group/:groupId", element: <AuthRequired><GroupDetail /></AuthRequired> },
+      { path: "group/:groupId/analytics", element: <AuthRequired><Analytics /></AuthRequired> },
       { path: "create-card", Component: CreateCard },
-      { path: "join/:groupId", Component: JoinGroup },
-      { path: "invites", Component: Invites },
-      { path: "test", Component: TestConnection },
+      { path: "join/:groupId", element: <AuthRequired><JoinGroup /></AuthRequired> },
+      { path: "invites", element: <AuthRequired><Invites /></AuthRequired> },
+      { path: "test", element: <AuthRequired><TestConnection /></AuthRequired> },
       { path: "*", Component: NotFound },
     ],
   },

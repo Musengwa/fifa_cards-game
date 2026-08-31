@@ -191,8 +191,9 @@ export default function CreateCard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(isAuthenticated() ? '/dashboard' : '/')}
               className="text-white hover:bg-white/10"
+              aria-label="Back"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
