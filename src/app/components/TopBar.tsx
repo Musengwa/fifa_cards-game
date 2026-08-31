@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -10,14 +10,45 @@ import {
   DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Menu, Trophy, Palette, Check, Settings } from "lucide-react";
+import {
+  Menu, Trophy, Palette, Check, Settings, LayoutDashboard, Plus, CreditCard,
+  Bell, User, LogOut,
+} from "lucide-react";
 import { useNavigate } from "react-router";
 import { APP_THEMES, useAppTheme, type AppTheme } from "../lib/theme";
+import { API_BASE_URL, getAuthHeaders } from "../lib/supabase";
+import { signOut } from "../lib/auth";
+import { toast } from "sonner";
+import ProfileDialog from "./ProfileDialog";
+import NotificationsBell from "./NotificationsBell";
 
 export default function TopBar() {
   const navigate = useNavigate();
   const { theme, tokens, setTheme } = useAppTheme();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [pendingInviteCount, setPendingInviteCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPendingInvites = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/invite/pending`, { headers: getAuthHeaders() });
+        const data = await response.json();
+        if (!cancelled && response.ok) setPendingInviteCount(data.invites?.length || 0);
+      } catch {
+        // ignore — the green dot just won't show
+      }
+    };
+    loadPendingInvites();
+    const interval = setInterval(loadPendingInvites, 20000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
+  const handleSignOut = async () => {
+    try { await signOut(); navigate('/'); }
+    catch { toast.error('Sign out failed'); }
+  };
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
@@ -29,21 +60,52 @@ export default function TopBar() {
               <span className="text-lg font-black text-white">FIFA Card Rank</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <NotificationsBell />
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Open menu">
+                  <Button variant="ghost" size="icon" aria-label="Open menu" className="relative">
                     <Menu className="w-5 h-5" />
+                    {pendingInviteCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500 ring-2 ring-black/20" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>Dashboard</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/create-group')}>Create Group</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/create-card')}>Create Card</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                    <LayoutDashboard className="size-4" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/create-group')}>
+                    <Plus className="size-4" />
+                    Create Group
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/create-card')}>
+                    <CreditCard className="size-4" />
+                    Create Card
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/invites')} className="relative">
+                    <Bell className="size-4" />
+                    Invites
+                    {pendingInviteCount > 0 && (
+                      <span className="ml-auto w-2 h-2 rounded-full bg-green-500" />
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setProfileOpen(true)}>
+                    <User className="size-4" />
+                    Profile
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                     <Settings className="size-4" />
                     Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="size-4" />
+                    Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -89,6 +151,8 @@ export default function TopBar() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </header>
   );
 }

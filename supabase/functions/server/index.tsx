@@ -82,6 +82,30 @@ const deleteGroupRecord = async (group: any) => {
   await kv.del(`group:${group.id}`);
 };
 
+// Creates one notification for a user (a group owner being told someone joined,
+// a sender being told their invite went out, etc.). Notifications are stored
+// per-recipient under notification:{userId}:{id} so getByPrefix can list one
+// user's feed without scanning everyone else's.
+const createNotification = async (
+  userId: string,
+  type: string,
+  message: string,
+  meta: Record<string, unknown> = {}
+) => {
+  const id = crypto.randomUUID();
+  const notification = {
+    id,
+    userId,
+    type,
+    message,
+    read: false,
+    createdAt: new Date().toISOString(),
+    ...meta,
+  };
+  await kv.set(`notification:${userId}:${id}`, notification);
+  return notification;
+};
+
 // Health check endpoint
 app.get("/make-server-44e0fa0c/health", (c) => {
   return c.json({ status: "ok" });
@@ -464,6 +488,17 @@ app.post("/make-server-44e0fa0c/group/:groupId/join", async (c) => {
       if (!userGroups.includes(groupId)) {
         userGroups.push(groupId);
         await kv.set(`userGroups:${userId}`, userGroups);
+      }
+
+      // Let the owner know someone new joined
+      if (group.creatorId && group.creatorId !== userId) {
+        const joiner = await kv.get(`user:${userId}`);
+        await createNotification(
+          group.creatorId,
+          'member_joined',
+          `${joiner?.name || 'Someone'} joined ${group.name}`,
+          { groupId }
+        );
       }
     }
 
@@ -1002,6 +1037,15 @@ app.post("/make-server-44e0fa0c/invite/send", async (c) => {
 
     await kv.set(`invite:${groupId}:${toUserId}`, invite);
 
+    // Confirm to the sender that it went out
+    const recipient = await kv.get(`user:${toUserId}`);
+    await createNotification(
+      userId,
+      'invite_sent',
+      `Invite sent to ${recipient?.name || recipient?.email || 'user'} for ${group.name}`,
+      { groupId, toUserId }
+    );
+
     return c.json({ invite });
   } catch (error) {
     console.error('Error sending invitation:', error);
@@ -1088,6 +1132,17 @@ app.post("/make-server-44e0fa0c/invite/accept", async (c) => {
     invite.acceptedAt = new Date().toISOString();
     await kv.set(`invite:${groupId}:${userId}`, invite);
 
+    // Let the owner know the invite was accepted
+    if (group.creatorId && group.creatorId !== userId) {
+      const joiner = await kv.get(`user:${userId}`);
+      await createNotification(
+        group.creatorId,
+        'member_joined',
+        `${joiner?.name || 'Someone'} joined ${group.name}`,
+        { groupId }
+      );
+    }
+
     return c.json({ group });
   } catch (error) {
     console.error('Error accepting invitation:', error);
@@ -1123,6 +1178,75 @@ app.post("/make-server-44e0fa0c/invite/decline", async (c) => {
   } catch (error) {
     console.error('Error declining invitation:', error);
     return c.json({ error: 'Failed to decline invitation' }, 500);
+  }
+});
+
+// NOTIFICATION ENDPOINTS
+
+// Get notifications for the current user, newest first
+app.get("/make-server-44e0fa0c/notifications", async (c) => {
+  try {
+    const userId = await verifyAuth(c.req.header('Authorization'));
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const notifications = await kv.getByPrefix(`notification:${userId}:`);
+    notifications.sort(
+      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    return c.json({ notifications });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return c.json({ error: 'Failed to fetch notifications' }, 500);
+  }
+});
+
+// Mark one notification as read
+app.post("/make-server-44e0fa0c/notifications/:id/read", async (c) => {
+  try {
+    const userId = await verifyAuth(c.req.header('Authorization'));
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const id = c.req.param('id');
+    const key = `notification:${userId}:${id}`;
+    const notification = await kv.get(key);
+    if (!notification) {
+      return c.json({ error: 'Notification not found' }, 404);
+    }
+
+    notification.read = true;
+    await kv.set(key, notification);
+
+    return c.json({ notification });
+  } catch (error) {
+    console.error('Error marking notification read:', error);
+    return c.json({ error: 'Failed to update notification' }, 500);
+  }
+});
+
+// Mark every notification as read
+app.post("/make-server-44e0fa0c/notifications/read-all", async (c) => {
+  try {
+    const userId = await verifyAuth(c.req.header('Authorization'));
+    if (!userId) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const notifications = await kv.getByPrefix(`notification:${userId}:`);
+    await Promise.all(
+      notifications
+        .filter((n: any) => !n.read)
+        .map((n: any) => kv.set(`notification:${userId}:${n.id}`, { ...n, read: true }))
+    );
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error marking all notifications read:', error);
+    return c.json({ error: 'Failed to update notifications' }, 500);
   }
 });
 

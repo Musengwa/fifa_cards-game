@@ -2,26 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
-import {
-  Plus, LogOut, Users, Calendar, User, Bell, Menu,
-  CheckCircle2, Clock, CreditCard, Check, Lock, Shield, Globe2, Trash2, AlertTriangle,
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '../components/ui/dropdown-menu';
+import { Plus, Users, Calendar, User, Clock, Check, Lock } from 'lucide-react';
 import { motion } from 'motion/react';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
-import { signOut, getSession, isAuthenticated, updateUserProfile, deleteAccount } from '../lib/auth';
-import { Checkbox } from '../components/ui/checkbox';
-import ClubPicker, { Club } from '../components/ClubPicker';
-import NationPicker, { Nation } from '../components/NationPicker';
+import { getSession, isAuthenticated } from '../lib/auth';
 import PageLoader from '../components/PageLoader';
 import { toast } from 'sonner';
 import { useAppTheme } from '../lib/theme';
@@ -44,27 +28,11 @@ export default function Dashboard() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const [uploadingPic, setUploadingPic] = useState(false);
-  const [clubPickerOpen, setClubPickerOpen] = useState(false);
-  const [savingClub, setSavingClub] = useState(false);
-  const [nationPickerOpen, setNationPickerOpen] = useState(false);
-  const [savingNation, setSavingNation] = useState(false);
-  const [pendingInviteCount, setPendingInviteCount] = useState(0);
-  const [nameInput, setNameInput] = useState('');
-  const [savingName, setSavingName] = useState(false);
-  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
-  const [deleteAccountConfirmed, setDeleteAccountConfirmed] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) { navigate('/'); return; }
     loadData();
   }, []);
-
-  useEffect(() => {
-    setNameInput(userProfile?.name || '');
-  }, [userProfile?.name]);
 
   const loadData = async () => {
     try {
@@ -79,15 +47,13 @@ export default function Dashboard() {
         console.warn('getSession timed out or failed:', err);
       });
 
-      // Fire all three requests concurrently but guard against a hung network.
+      // Fire both requests concurrently but guard against a hung network.
       const profilePromise = fetch(`${API_BASE_URL}/user/profile`, { headers: getAuthHeaders() });
       const groupsPromise = fetch(`${API_BASE_URL}/user/groups`, { headers: getAuthHeaders() });
-      const invitesPromise = fetch(`${API_BASE_URL}/invite/pending`, { headers: getAuthHeaders() }).catch(() => null);
 
-      const [profileRes, groupsRes, invitesRes] = await Promise.all([
+      const [profileRes, groupsRes] = await Promise.all([
         withTimeout(profilePromise, 8000),
         withTimeout(groupsPromise, 8000),
-        withTimeout(invitesPromise, 8000).catch(() => null),
       ]);
 
       if (profileRes.status === 401) { navigate('/'); return; }
@@ -97,107 +63,10 @@ export default function Dashboard() {
       const groupsData = await groupsRes.json();
       if (groupsRes.ok) setGroups(groupsData.groups || []);
       else toast.error('Failed to load groups');
-
-      if (invitesRes) {
-        const invitesData = await invitesRes.json();
-        if (invitesRes.ok) setPendingInviteCount(invitesData.invites?.length || 0);
-      }
     } catch {
       toast.error('Failed to load data (server timeout or network error)');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSignOut = async () => {
-    try { await signOut(); navigate('/'); }
-    catch { toast.error('Sign out failed'); }
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!deleteAccountConfirmed) {
-      toast.error('Please check the confirmation box first');
-      return;
-    }
-    setDeletingAccount(true);
-    try {
-      await deleteAccount();
-      toast.success('Account deleted');
-      navigate('/');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete account');
-    } finally {
-      setDeletingAccount(false);
-    }
-  };
-
-  const handleProfilePicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingPic(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { Authorization } = getAuthHeaders();
-      const response = await fetch(`${API_BASE_URL}/user/upload-profile-pic`, {
-        method: 'POST',
-        headers: { Authorization },
-        body: formData,
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to upload picture');
-      toast.success('Profile picture uploaded');
-      loadData();
-      setProfileDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload picture');
-    } finally {
-      setUploadingPic(false);
-    }
-  };
-
-  const handleNameBlur = async () => {
-    const trimmed = nameInput.trim();
-    if (!trimmed || trimmed === userProfile?.name) {
-      setNameInput(userProfile?.name || '');
-      return;
-    }
-    setSavingName(true);
-    try {
-      await updateUserProfile({ name: trimmed });
-      setUserProfile((prev: any) => ({ ...prev, name: trimmed }));
-      toast.success('Name updated');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update name');
-      setNameInput(userProfile?.name || '');
-    } finally {
-      setSavingName(false);
-    }
-  };
-
-  const handleSelectClub = async (selected: Club) => {
-    setSavingClub(true);
-    try {
-      await updateUserProfile({ club: selected.name, clubLogoUrl: selected.iconUrl });
-      setUserProfile((prev: any) => ({ ...prev, club: selected.name, clubLogoUrl: selected.iconUrl }));
-      toast.success(`Club set to ${selected.name}`);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update club');
-    } finally {
-      setSavingClub(false);
-    }
-  };
-
-  const handleSelectNation = async (selected: Nation) => {
-    setSavingNation(true);
-    try {
-      await updateUserProfile({ nationality: selected.name, nationalityFlagUrl: selected.iconUrl });
-      setUserProfile((prev: any) => ({ ...prev, nationality: selected.name, nationalityFlagUrl: selected.iconUrl }));
-      toast.success(`Nationality set to ${selected.name}`);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update nationality');
-    } finally {
-      setSavingNation(false);
     }
   };
 
@@ -223,40 +92,6 @@ export default function Dashboard() {
               <h1 className="text-2xl sm:text-4xl font-bold text-white mb-1">Dashboard</h1>
               <p className={`text-sm sm:text-base truncate ${tokens.accentTextSecondary}`}>Welcome back, {userProfile?.name || 'User'}!</p>
             </div>
-          </div>
-
-          <div className="w-full sm:w-auto flex items-center justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Open menu">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate('/invites')}>
-                  <Bell className="size-4" />
-                  Invites
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setProfileDialogOpen(true)}>
-                  <User className="size-4" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/create-card')}>
-                  <CreditCard className="size-4" />
-                  Create Card
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/create-group')}>
-                  <Plus className="size-4" />
-                  Create Group
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="size-4" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
 
