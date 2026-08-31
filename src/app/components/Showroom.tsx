@@ -343,7 +343,12 @@ export default function Showroom({ members, attributes, ratings, starRatings = {
   return (
     <div
       ref={showroomRef}
-      className={`h-full bg-gradient-to-br ${t.bgGradient} flex flex-col p-3 sm:p-4 lg:p-6 overflow-hidden`}
+      // min-h-full (not a hard h-full) + only clipping the x-axis (where the ghost
+      // cards fan out) so that if the deck needs more vertical room than the tab
+      // strip left it, the card grows the page and the outer view scrolls to it
+      // instead of getting silently clipped at the bottom — that's what was
+      // "cutting off" cards on shorter desktop viewports.
+      className={`min-h-full bg-gradient-to-br ${t.bgGradient} flex flex-col p-3 sm:p-4 lg:p-6 overflow-x-hidden`}
     >
       <div className="max-w-7xl mx-auto w-full flex flex-col flex-1 min-h-0">
 

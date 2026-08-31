@@ -113,7 +113,7 @@ export default function GroupDetail() {
   const [copied, setCopied] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [sendingInvites, setSendingInvites] = useState<string[]>([]);
-  const [postSessionTab, setPostSessionTab] = useState<'showroom' | 'trophies' | 'analytics'>('showroom');
+  const [postSessionTab, setPostSessionTab] = useState<'showroom' | 'trophies'>('showroom');
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
   const [endSessionConfirmed, setEndSessionConfirmed] = useState(false);
   const [endingSession, setEndingSession] = useState(false);
@@ -522,12 +522,13 @@ export default function GroupDetail() {
               </div>
             </div>
 
-            {/* Post-Session Navigation */}
+            {/* Post-Session Navigation — buttons keep their natural width and the row
+                scrolls horizontally on narrow screens instead of squeezing labels. */}
             <div className="flex gap-2 sm:gap-4 mt-4 overflow-x-auto">
               <Button
                 onClick={() => setPostSessionTab('showroom')}
                 variant={postSessionTab === 'showroom' ? 'default' : 'ghost'}
-                className={`flex-1 sm:flex-none ${
+                className={`shrink-0 ${
                   postSessionTab === 'showroom'
                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
                     : 'text-slate-300 hover:bg-white/10'
@@ -539,7 +540,7 @@ export default function GroupDetail() {
               <Button
                 onClick={() => setPostSessionTab('trophies')}
                 variant={postSessionTab === 'trophies' ? 'default' : 'ghost'}
-                className={`flex-1 sm:flex-none ${
+                className={`shrink-0 ${
                   postSessionTab === 'trophies'
                     ? 'bg-gradient-to-r from-yellow-600 to-amber-600 text-white'
                     : 'text-slate-300 hover:bg-white/10'
@@ -549,13 +550,9 @@ export default function GroupDetail() {
                 Trophy Room
               </Button>
               <Button
-                onClick={() => setPostSessionTab('analytics')}
-                variant={postSessionTab === 'analytics' ? 'default' : 'ghost'}
-                className={`flex-1 sm:flex-none ${
-                  postSessionTab === 'analytics'
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white'
-                    : 'text-slate-300 hover:bg-white/10'
-                }`}
+                onClick={() => navigate(`/group/${groupId}/analytics`)}
+                variant="ghost"
+                className="shrink-0 text-slate-300 hover:bg-white/10"
               >
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Analysis
@@ -586,46 +583,6 @@ export default function GroupDetail() {
               votes={votes}
               awardCategories={group.awardCategories}
             />
-          )}
-
-          {postSessionTab === 'analytics' && (
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800">
-              {/* Inline Analytics View */}
-              <div className="max-w-7xl mx-auto p-3 sm:p-6">
-                <div className="mb-6">
-                  <h2 className="text-2xl sm:text-4xl font-bold text-white mb-2">Detailed Analysis</h2>
-                  <p className="text-slate-300 text-sm sm:text-base">Comprehensive statistics and insights from this session</p>
-                </div>
-                <Button
-                  onClick={() => navigate(`/group/${groupId}/analytics`)}
-                  variant="outline"
-                  className="mb-6 border-purple-400 text-purple-300 hover:bg-purple-900/20"
-                >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Open Full Analytics Dashboard
-                </Button>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-purple-600/20 to-pink-600/20 p-4 sm:p-6 rounded-xl border border-purple-400/30">
-                    <div className="text-3xl sm:text-4xl font-bold text-white mb-1">{members.length}</div>
-                    <div className="text-purple-200 text-sm sm:text-base">Total Members</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-yellow-600/20 to-amber-600/20 p-4 sm:p-6 rounded-xl border border-yellow-400/30">
-                    <div className="text-3xl sm:text-4xl font-bold text-white mb-1">{group.attributes.length}</div>
-                    <div className="text-yellow-200 text-sm sm:text-base">Attributes Rated</div>
-                  </div>
-                  <div className="bg-gradient-to-br from-blue-600/20 to-cyan-600/20 p-4 sm:p-6 rounded-xl border border-blue-400/30">
-                    <div className="text-3xl sm:text-4xl font-bold text-white mb-1">{group.awardCategories.length}</div>
-                    <div className="text-blue-200 text-sm sm:text-base">Award Categories</div>
-                  </div>
-                </div>
-
-                <div className="text-center py-8 text-slate-400">
-                  <p className="text-lg mb-4">Click the button above to view detailed charts and vote distributions</p>
-                </div>
-              </div>
-            </div>
           )}
         </div>
       </div>
