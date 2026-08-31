@@ -100,7 +100,7 @@ export default function TopBar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                     <Settings className="size-4" />
-                    Settings
+                    Themes
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
