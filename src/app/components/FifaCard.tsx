@@ -1,9 +1,17 @@
 import { useRef, useState } from 'react';
-import { User as UserIcon, Download } from 'lucide-react';
+import { User as UserIcon, Download, Camera, Globe2, Shield as ShieldIcon, Plus, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { downloadAsPng } from '../lib/download';
 import { StarRatingDisplay } from './StarRating';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { toast } from 'sonner';
+
+/** Playable positions, ordered keeper → outfield, for the on-card position picker. */
+export const POSITIONS = [
+  'GK', 'CB', 'LB', 'RB', 'LWB', 'RWB',
+  'CDM', 'CM', 'CAM', 'RM', 'LM',
+  'RW', 'LW', 'CF', 'ST',
+];
 const greenShieldBg = new URL('./card-images/green.png', import.meta.url).href;
 const purpleShieldBg = new URL('./card-images/Clipped_image_20260805_155650.png', import.meta.url).href;
 const goldShieldBg = new URL('./card-images/Clipped_image_20260805_180319.png', import.meta.url).href;
@@ -172,6 +180,27 @@ interface Attribute {
   name: string;
 }
 
+/**
+ * Turns the card itself into the form: pass this to render every field as a
+ * tap/scroll target in place instead of showing plain read-only text. Any
+ * handler left out keeps that field read-only.
+ */
+export interface FifaCardEditHandlers {
+  /** Tap the photo to open the file picker */
+  onPhotoTap?: () => void;
+  /** Tap the flag to open the nationality picker */
+  onNationTap?: () => void;
+  /** Tap the club badge to open the club picker */
+  onClubTap?: () => void;
+  onNameChange?: (value: string) => void;
+  onPositionChange?: (value: string) => void;
+  onAttrNameChange?: (id: string, name: string) => void;
+  onAttrValueChange?: (id: string, value: number) => void;
+  onAttrRemove?: (id: string) => void;
+  onAttrAdd?: () => void;
+  canAddAttr?: boolean;
+}
+
 interface FifaCardProps {
   user: FifaCardData;
   attributes: Attribute[];
@@ -182,6 +211,152 @@ interface FifaCardProps {
   peerRating?: PeerRating | null;
   /** Show the download-as-PNG button beneath the card */
   showDownload?: boolean;
+  /** Make the card directly editable in place — see FifaCardEditHandlers */
+  edit?: FifaCardEditHandlers;
+}
+
+/**
+ * A tiny value that you scroll (mouse wheel) or drag (touch) up/down to change,
+ * instead of typing a number — used for stat values on an editable card.
+ */
+function AttrValueScrubber({
+  value,
+  onChange,
+  className,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+  className?: string;
+}) {
+  const drag = useRef<{ startY: number; startValue: number } | null>(null);
+  const clamp = (v: number) => Math.max(1, Math.min(99, Math.round(v)));
+
+  return (
+    <span
+      role="slider"
+      aria-valuemin={1}
+      aria-valuemax={99}
+      aria-valuenow={value}
+      tabIndex={0}
+      onWheel={(e) => {
+        e.preventDefault();
+        onChange(clamp(value + (e.deltaY < 0 ? 1 : -1)));
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); onChange(clamp(value + 1)); }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); onChange(clamp(value - 1)); }
+      }}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        drag.current = { startY: e.clientY, startValue: value };
+      }}
+      onPointerMove={(e) => {
+        if (!drag.current) return;
+        const deltaPoints = (drag.current.startY - e.clientY) / 6; // 6px of drag ≈ 1 point, up = higher
+        onChange(clamp(drag.current.startValue + deltaPoints));
+      }}
+      onPointerUp={() => { drag.current = null; }}
+      onPointerCancel={() => { drag.current = null; }}
+      title="Scroll or drag up/down to change"
+      className={`cursor-ns-resize select-none touch-none outline-none ${className || ''}`}
+    >
+      {value}
+    </span>
+  );
+}
+
+interface AttrEditRowProps {
+  attr: Attribute;
+  ratings: { [attributeId: string]: number };
+  hasRatings: boolean;
+  shield: ShieldTheme;
+  edit?: FifaCardEditHandlers;
+}
+
+/** One stat, laid out value-then-label — used by the two-column `sideBadges` themes. */
+function AttrRow({ attr, ratings, hasRatings, shield, edit }: AttrEditRowProps) {
+  const value = ratings[attr.id] ?? 50;
+
+  return (
+    <div className="relative flex items-baseline gap-1.5 group">
+      {edit?.onAttrValueChange ? (
+        <AttrValueScrubber
+          value={value}
+          onChange={(v) => edit.onAttrValueChange!(attr.id, v)}
+          className={`text-base font-black ${shield.statValue} ${shield.shadow}`}
+        />
+      ) : (
+        <span className={`text-base font-black ${shield.statValue} ${shield.shadow}`}>
+          {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
+        </span>
+      )}
+      {edit?.onAttrNameChange ? (
+        <input
+          value={attr.name}
+          onChange={(e) => edit.onAttrNameChange!(attr.id, e.target.value.toUpperCase().slice(0, 5))}
+          maxLength={5}
+          className={`w-12 bg-transparent border-0 p-0 m-0 outline-none text-[10px] font-bold uppercase tracking-wide ${shield.statLabel}`}
+        />
+      ) : (
+        <span className={`text-[10px] font-bold uppercase tracking-wide ${shield.statLabel}`}>
+          {attr.name.slice(0, 3)}
+        </span>
+      )}
+      {edit?.onAttrRemove && (
+        <button
+          type="button"
+          onClick={() => edit.onAttrRemove!(attr.id)}
+          className="card-export-exclude absolute -right-3 -top-1.5 text-red-400 opacity-0 group-hover:opacity-100"
+          aria-label={`Remove ${attr.name}`}
+        >
+          <X className="w-2.5 h-2.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** One stat, laid out label-over-value — used by the single-row `bottomBadges` theme. */
+function AttrColumn({ attr, ratings, hasRatings, shield, edit }: AttrEditRowProps) {
+  const value = ratings[attr.id] ?? 50;
+
+  return (
+    <div className="relative flex flex-col items-center justify-center gap-0.5 group">
+      {edit?.onAttrRemove && (
+        <button
+          type="button"
+          onClick={() => edit.onAttrRemove!(attr.id)}
+          className="card-export-exclude absolute -top-1.5 right-0 text-red-300 opacity-0 group-hover:opacity-100"
+          aria-label={`Remove ${attr.name}`}
+        >
+          <X className="w-2.5 h-2.5" />
+        </button>
+      )}
+      {edit?.onAttrNameChange ? (
+        <input
+          value={attr.name}
+          onChange={(e) => edit.onAttrNameChange!(attr.id, e.target.value.toUpperCase().slice(0, 5))}
+          maxLength={5}
+          className={`w-12 bg-transparent border-0 p-0 m-0 outline-none text-center text-[9px] font-bold uppercase tracking-wide ${shield.statLabel}`}
+        />
+      ) : (
+        <span className={`text-[9px] font-bold uppercase tracking-wide ${shield.statLabel}`}>
+          {attr.name.slice(0, 3)}
+        </span>
+      )}
+      {edit?.onAttrValueChange ? (
+        <AttrValueScrubber
+          value={value}
+          onChange={(v) => edit.onAttrValueChange!(attr.id, v)}
+          className={`text-sm font-black ${shield.statValue} ${shield.shadow}`}
+        />
+      ) : (
+        <span className={`text-sm font-black ${shield.statValue} ${shield.shadow}`}>
+          {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function FifaCard({
@@ -192,6 +367,7 @@ export default function FifaCard({
   cardTheme = 'greenOrange',
   peerRating,
   showDownload = false,
+  edit,
 }: FifaCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
@@ -282,41 +458,116 @@ export default function FifaCard({
         <span className={`text-5xl font-black leading-none ${shield.ovr} ${shield.shadow}`}>
           {overall || '—'}
         </span>
-        {user.position && (
-          <span className={`text-xs font-black uppercase tracking-wide mt-0.5 ${shield.pos} ${shield.shadow}`}>
-            {user.position}
-          </span>
+        {edit?.onPositionChange ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={`bg-transparent border-0 p-0 m-0 leading-none text-xs font-black uppercase tracking-wide mt-0.5 ${shield.pos} ${shield.shadow} underline decoration-dotted underline-offset-4 decoration-1`}
+              >
+                {user.position || 'POS'}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-52 p-2">
+              <div className="grid grid-cols-4 gap-1">
+                {POSITIONS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => edit.onPositionChange!(p)}
+                    className={`text-xs font-bold py-1.5 rounded transition-colors ${
+                      p === user.position ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          user.position && (
+            <span className={`text-xs font-black uppercase tracking-wide mt-0.5 ${shield.pos} ${shield.shadow}`}>
+              {user.position}
+            </span>
+          )
         )}
       </div>
 
       {shield.layout === 'sideBadges' ? (
         <>
           {/* Nationality flag */}
-          {user.nationalityFlagUrl && (
+          {(user.nationalityFlagUrl || edit?.onNationTap) && (
             <div className="absolute" style={{ top: '31%', left: '9%', width: '10%' }}>
-              <img
-                src={user.nationalityFlagUrl}
-                alt=""
-                aria-hidden
-                crossOrigin="anonymous"
-                className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
-              />
+              {edit?.onNationTap ? (
+                <button
+                  type="button"
+                  onClick={edit.onNationTap}
+                  className="bg-transparent border-0 p-0 m-0 block w-full"
+                  aria-label="Change nationality"
+                >
+                  {user.nationalityFlagUrl ? (
+                    <img
+                      src={user.nationalityFlagUrl}
+                      alt=""
+                      aria-hidden
+                      crossOrigin="anonymous"
+                      className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
+                    />
+                  ) : (
+                    <span className="flex w-full aspect-[3/2] items-center justify-center rounded-[2px] border border-dashed border-current opacity-50">
+                      <Globe2 className="w-3 h-3" />
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <img
+                  src={user.nationalityFlagUrl!}
+                  alt=""
+                  aria-hidden
+                  crossOrigin="anonymous"
+                  className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
+                />
+              )}
             </div>
           )}
 
           {/* Club badge */}
-          {user.clubLogoUrl && (
+          {(user.clubLogoUrl || edit?.onClubTap) && (
             <div
               className="absolute"
-              style={{ top: user.nationalityFlagUrl ? '38%' : '31%', left: '9%', width: '10%' }}
+              style={{ top: (user.nationalityFlagUrl || edit?.onNationTap) ? '38%' : '31%', left: '9%', width: '10%' }}
             >
-              <img
-                src={user.clubLogoUrl}
-                alt=""
-                aria-hidden
-                crossOrigin="anonymous"
-                className="w-full aspect-square object-contain drop-shadow"
-              />
+              {edit?.onClubTap ? (
+                <button
+                  type="button"
+                  onClick={edit.onClubTap}
+                  className="bg-transparent border-0 p-0 m-0 block w-full"
+                  aria-label="Change club"
+                >
+                  {user.clubLogoUrl ? (
+                    <img
+                      src={user.clubLogoUrl}
+                      alt=""
+                      aria-hidden
+                      crossOrigin="anonymous"
+                      className="w-full aspect-square object-contain drop-shadow"
+                    />
+                  ) : (
+                    <span className="flex w-full aspect-square items-center justify-center rounded-full border border-dashed border-current opacity-50">
+                      <ShieldIcon className="w-3 h-3" />
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <img
+                  src={user.clubLogoUrl!}
+                  alt=""
+                  aria-hidden
+                  crossOrigin="anonymous"
+                  className="w-full aspect-square object-contain drop-shadow"
+                />
+              )}
             </div>
           )}
 
@@ -332,7 +583,30 @@ export default function FifaCard({
               maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
             }}
           >
-            {user.profilePicUrl ? (
+            {edit?.onPhotoTap ? (
+              <button
+                type="button"
+                onClick={edit.onPhotoTap}
+                className="group relative bg-transparent border-0 p-0 m-0 block w-full h-full"
+                aria-label="Change photo"
+              >
+                {user.profilePicUrl ? (
+                  <img
+                    src={user.profilePicUrl}
+                    alt={user.name}
+                    crossOrigin="anonymous"
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <UserIcon className={`w-16 h-16 ${shield.placeholderIcon}`} />
+                  </div>
+                )}
+                <span className="card-export-exclude absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 group-active:bg-black/30 transition-colors opacity-0 group-hover:opacity-100 group-active:opacity-100">
+                  <Camera className="w-6 h-6 text-white drop-shadow" />
+                </span>
+              </button>
+            ) : user.profilePicUrl ? (
               <img
                 src={user.profilePicUrl}
                 alt={user.name}
@@ -348,11 +622,20 @@ export default function FifaCard({
 
           {/* Name */}
           <div className="absolute text-center" style={{ top: '57%', left: '4%', width: '92%' }}>
-            <h3
-              className={`text-lg font-black uppercase tracking-widest ${shield.name} leading-tight truncate ${shield.shadow}`}
-            >
-              {user.name}
-            </h3>
+            {edit?.onNameChange ? (
+              <input
+                value={user.name}
+                onChange={(e) => edit.onNameChange!(e.target.value.toUpperCase().slice(0, 20))}
+                placeholder="YOUR NAME"
+                className={`w-full bg-transparent border-0 p-0 m-0 outline-none text-center text-lg font-black uppercase tracking-widest ${shield.name} leading-tight ${shield.shadow} placeholder:opacity-40`}
+              />
+            ) : (
+              <h3
+                className={`text-lg font-black uppercase tracking-widest ${shield.name} leading-tight truncate ${shield.shadow}`}
+              >
+                {user.name}
+              </h3>
+            )}
             {peerRating && peerRating.count > 0 && (
               <div className="flex items-center justify-center gap-1.5 mt-1">
                 <StarRatingDisplay value={peerRating.average} size={11} color={shield.pos} />
@@ -362,32 +645,27 @@ export default function FifaCard({
           </div>
 
           {/* Stats — two columns split by a vertical divider, matching the reference layout */}
-          {(leftAttrs.length > 0 || rightAttrs.length > 0) && (
+          {(leftAttrs.length > 0 || rightAttrs.length > 0 || edit?.onAttrAdd) && (
             <div className="absolute" style={{ top: '65%', left: '10%', width: '80%', height: '27%' }}>
               <div className={`grid grid-cols-2 divide-x h-full ${shield.divider}`}>
                 <div className="flex flex-col justify-center gap-1.5 pr-3">
                   {leftAttrs.map((attr) => (
-                    <div key={attr.id} className="flex items-baseline gap-1.5">
-                      <span className={`text-base font-black ${shield.statValue} ${shield.shadow}`}>
-                        {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase tracking-wide ${shield.statLabel}`}>
-                        {attr.name.slice(0, 3)}
-                      </span>
-                    </div>
+                    <AttrRow key={attr.id} attr={attr} ratings={ratings} hasRatings={hasRatings} shield={shield} edit={edit} />
                   ))}
                 </div>
                 <div className="flex flex-col justify-center gap-1.5 pl-3">
                   {rightAttrs.map((attr) => (
-                    <div key={attr.id} className="flex items-baseline gap-1.5">
-                      <span className={`text-base font-black ${shield.statValue} ${shield.shadow}`}>
-                        {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
-                      </span>
-                      <span className={`text-[10px] font-bold uppercase tracking-wide ${shield.statLabel}`}>
-                        {attr.name.slice(0, 3)}
-                      </span>
-                    </div>
+                    <AttrRow key={attr.id} attr={attr} ratings={ratings} hasRatings={hasRatings} shield={shield} edit={edit} />
                   ))}
+                  {edit?.onAttrAdd && edit.canAddAttr !== false && (
+                    <button
+                      type="button"
+                      onClick={edit.onAttrAdd}
+                      className={`card-export-exclude flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${shield.statLabel} opacity-70 hover:opacity-100`}
+                    >
+                      <Plus className="w-3 h-3" /> Add
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -408,7 +686,30 @@ export default function FifaCard({
               maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
             }}
           >
-            {user.profilePicUrl ? (
+            {edit?.onPhotoTap ? (
+              <button
+                type="button"
+                onClick={edit.onPhotoTap}
+                className="group relative bg-transparent border-0 p-0 m-0 block w-full h-full"
+                aria-label="Change photo"
+              >
+                {user.profilePicUrl ? (
+                  <img
+                    src={user.profilePicUrl}
+                    alt={user.name}
+                    crossOrigin="anonymous"
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <UserIcon className={`w-16 h-16 ${shield.placeholderIcon}`} />
+                  </div>
+                )}
+                <span className="card-export-exclude absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 group-active:bg-black/30 transition-colors opacity-0 group-hover:opacity-100 group-active:opacity-100">
+                  <Camera className="w-6 h-6 text-white drop-shadow" />
+                </span>
+              </button>
+            ) : user.profilePicUrl ? (
               <img
                 src={user.profilePicUrl}
                 alt={user.name}
@@ -424,11 +725,20 @@ export default function FifaCard({
 
           {/* Name */}
           <div className="absolute text-center" style={{ top: '62%', left: '4%', width: '92%' }}>
-            <h3
-              className={`text-xl font-black uppercase tracking-wide ${shield.name} leading-tight truncate ${shield.shadow}`}
-            >
-              {user.name}
-            </h3>
+            {edit?.onNameChange ? (
+              <input
+                value={user.name}
+                onChange={(e) => edit.onNameChange!(e.target.value.toUpperCase().slice(0, 20))}
+                placeholder="YOUR NAME"
+                className={`w-full bg-transparent border-0 p-0 m-0 outline-none text-center text-xl font-black uppercase tracking-wide ${shield.name} leading-tight ${shield.shadow} placeholder:opacity-40`}
+              />
+            ) : (
+              <h3
+                className={`text-xl font-black uppercase tracking-wide ${shield.name} leading-tight truncate ${shield.shadow}`}
+              >
+                {user.name}
+              </h3>
+            )}
             {peerRating && peerRating.count > 0 && (
               <div className="flex items-center justify-center gap-1.5 mt-1">
                 <StarRatingDisplay value={peerRating.average} size={11} color={shield.pos} />
@@ -438,52 +748,101 @@ export default function FifaCard({
           </div>
 
           {/* Stats — single row, label above value, matching the reference layout */}
-          {attributes.length > 0 && (
+          {(attributes.length > 0 || edit?.onAttrAdd) && (
             <div className="absolute" style={{ top: '71%', left: '6%', width: '88%', height: '13%' }}>
               <div
                 className="grid h-full"
-                style={{ gridTemplateColumns: `repeat(${attributes.length}, minmax(0, 1fr))` }}
+                style={{ gridTemplateColumns: `repeat(${attributes.length + (edit?.onAttrAdd && edit.canAddAttr !== false ? 1 : 0)}, minmax(0, 1fr))` }}
               >
                 {attributes.map((attr) => (
-                  <div key={attr.id} className="flex flex-col items-center justify-center gap-0.5">
-                    <span className={`text-[9px] font-bold uppercase tracking-wide ${shield.statLabel}`}>
-                      {attr.name.slice(0, 3)}
-                    </span>
-                    <span className={`text-sm font-black ${shield.statValue} ${shield.shadow}`}>
-                      {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
-                    </span>
-                  </div>
+                  <AttrColumn key={attr.id} attr={attr} ratings={ratings} hasRatings={hasRatings} shield={shield} edit={edit} />
                 ))}
+                {edit?.onAttrAdd && edit.canAddAttr !== false && (
+                  <button
+                    type="button"
+                    onClick={edit.onAttrAdd}
+                    className={`card-export-exclude flex flex-col items-center justify-center gap-0.5 ${shield.statLabel} opacity-70 hover:opacity-100`}
+                    aria-label="Add stat"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           )}
 
           {/* Nationality flag + club badge, centered under the stats */}
-          {(user.nationalityFlagUrl || user.clubLogoUrl) && (
+          {(user.nationalityFlagUrl || user.clubLogoUrl || edit?.onNationTap || edit?.onClubTap) && (
             <div
               className="absolute flex items-center justify-center gap-3"
               style={{ top: '87%', left: 0, width: '100%' }}
             >
-              {user.nationalityFlagUrl && (
+              {(user.nationalityFlagUrl || edit?.onNationTap) && (
                 <div style={{ width: '9%' }}>
-                  <img
-                    src={user.nationalityFlagUrl}
-                    alt=""
-                    aria-hidden
-                    crossOrigin="anonymous"
-                    className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
-                  />
+                  {edit?.onNationTap ? (
+                    <button
+                      type="button"
+                      onClick={edit.onNationTap}
+                      className="bg-transparent border-0 p-0 m-0 block w-full"
+                      aria-label="Change nationality"
+                    >
+                      {user.nationalityFlagUrl ? (
+                        <img
+                          src={user.nationalityFlagUrl}
+                          alt=""
+                          aria-hidden
+                          crossOrigin="anonymous"
+                          className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
+                        />
+                      ) : (
+                        <span className="flex w-full aspect-[3/2] items-center justify-center rounded-[2px] border border-dashed border-current opacity-50">
+                          <Globe2 className="w-3 h-3" />
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <img
+                      src={user.nationalityFlagUrl!}
+                      alt=""
+                      aria-hidden
+                      crossOrigin="anonymous"
+                      className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
+                    />
+                  )}
                 </div>
               )}
-              {user.clubLogoUrl && (
+              {(user.clubLogoUrl || edit?.onClubTap) && (
                 <div style={{ width: '9%' }}>
-                  <img
-                    src={user.clubLogoUrl}
-                    alt=""
-                    aria-hidden
-                    crossOrigin="anonymous"
-                    className="w-full aspect-square object-contain drop-shadow"
-                  />
+                  {edit?.onClubTap ? (
+                    <button
+                      type="button"
+                      onClick={edit.onClubTap}
+                      className="bg-transparent border-0 p-0 m-0 block w-full"
+                      aria-label="Change club"
+                    >
+                      {user.clubLogoUrl ? (
+                        <img
+                          src={user.clubLogoUrl}
+                          alt=""
+                          aria-hidden
+                          crossOrigin="anonymous"
+                          className="w-full aspect-square object-contain drop-shadow"
+                        />
+                      ) : (
+                        <span className="flex w-full aspect-square items-center justify-center rounded-full border border-dashed border-current opacity-50">
+                          <ShieldIcon className="w-3 h-3" />
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <img
+                      src={user.clubLogoUrl!}
+                      alt=""
+                      aria-hidden
+                      crossOrigin="anonymous"
+                      className="w-full aspect-square object-contain drop-shadow"
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -502,8 +861,10 @@ export default function FifaCard({
   return (
     <div className="flex flex-col items-center gap-3">
       <motion.div
-        animate={{ y: [0, -10, 0] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+        // The idle float looks great on a read-only card, but a card you're actively
+        // typing/tapping into shouldn't drift under the cursor — hold it still in edit mode.
+        animate={edit ? { y: 0 } : { y: [0, -10, 0] }}
+        transition={edit ? { duration: 0 } : { duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
       >
         {cardFront}
       </motion.div>

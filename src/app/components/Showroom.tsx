@@ -149,9 +149,13 @@ function MemberCarousel({
         )}
       </div>
 
-      {/* Stage */}
+      {/* Stage — `zoom` (not `scale`) so the reduction actually shrinks the box's
+          layout footprint, not just its visual appearance: unlike a transform, this
+          genuinely frees up the vertical space that was getting the deck clipped on
+          desktop. The two breakpoints are independent Tailwind rules, so the 40%
+          desktop reduction can never bleed into the mobile 20% one. */}
       <div
-        className="relative flex items-center justify-center mx-auto min-h-[420px]"
+        className="relative flex items-center justify-center mx-auto min-h-[420px] [zoom:0.8] sm:[zoom:0.6]"
         style={{ perspective: 1400 }}
       >
         {total > 1 &&
