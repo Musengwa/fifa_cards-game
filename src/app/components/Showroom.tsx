@@ -1,9 +1,7 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from './ui/button';
-import { Download, Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
-import { downloadElement } from '../lib/download';
-import { toast } from 'sonner';
+import { Trophy, ChevronLeft, ChevronRight } from 'lucide-react';
 import FifaCard, { CardTheme } from './FifaCard';
 import { useAppTheme } from '../lib/theme';
 
@@ -305,8 +303,6 @@ const themes: Record<
 export default function Showroom({ members, attributes, ratings, starRatings = {}, votes, awardCategories }: ShowroomProps) {
   const { theme } = useAppTheme();
   const [downloading, setDownloading] = useState(false);
-  const showroomRef = useRef<HTMLDivElement>(null);
-
   const t = themes[theme];
 
   const membersWithStats = members
@@ -329,24 +325,8 @@ export default function Showroom({ members, attributes, ratings, starRatings = {
     })
     .sort((a, b) => b.overall - a.overall);
 
-  const handleDownloadShowroom = async () => {
-    if (!showroomRef.current) return;
-    setDownloading(true);
-    toast.info('Generating showcase image…');
-    try {
-      await downloadElement(showroomRef.current, `showroom-${theme}-${Date.now()}.png`);
-      toast.success('Showroom downloaded!');
-    } catch (err) {
-      console.error('Showroom download error:', err);
-      toast.error('Download failed');
-    } finally {
-      setDownloading(false);
-    }
-  };
-
   return (
     <div
-      ref={showroomRef}
       // min-h-full (not a hard h-full) + only clipping the x-axis (where the ghost
       // cards fan out) so that if the deck needs more vertical room than the tab
       // strip left it, the card grows the page and the outer view scrolls to it
@@ -355,18 +335,6 @@ export default function Showroom({ members, attributes, ratings, starRatings = {
       className={`min-h-full bg-gradient-to-br ${t.bgGradient} flex flex-col p-3 sm:p-4 lg:p-6 overflow-x-hidden`}
     >
       <div className="max-w-7xl mx-auto w-full flex flex-col flex-1 min-h-0">
-
-        {/* Controls */}
-        <div className="flex justify-end items-center gap-4 mb-2 sm:mb-3 shrink-0">
-          <Button
-            onClick={handleDownloadShowroom}
-            disabled={downloading}
-            className={`${t.btnActive} text-white shadow-lg hover:opacity-90`}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            {downloading ? 'Generating…' : 'Download Showroom'}
-          </Button>
-        </div>
 
         {/* Roster deck — one card at a time, vertically centered in whatever space remains */}
         <div className="flex-1 min-h-0 flex items-center justify-center">

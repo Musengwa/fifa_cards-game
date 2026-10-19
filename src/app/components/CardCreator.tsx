@@ -161,7 +161,7 @@ export default function CardCreator({ open, onOpenChange }: CardCreatorProps) {
               <Label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 block">
                 Photo
               </Label>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 transition-all duration-200 hover:scale-[1.02] hover:drop-shadow-[0_0_12px_rgba(168,85,247,0.55)] focus-within:scale-[1.02] focus-within:drop-shadow-[0_0_12px_rgba(168,85,247,0.65)]">
                 {imageUrl ? (
                   <div className="relative">
                     <img src={imageUrl} alt="preview" className="w-14 h-14 rounded-full object-cover border-2 border-purple-400" />
@@ -197,7 +197,7 @@ export default function CardCreator({ open, onOpenChange }: CardCreatorProps) {
             </div>
 
             {/* Name */}
-            <div>
+            <div className="transition-all duration-200 focus-within:scale-[1.02] focus-within:drop-shadow-[0_0_12px_rgba(168,85,247,0.65)]">
               <Label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 block">
                 Name
               </Label>
@@ -211,7 +211,7 @@ export default function CardCreator({ open, onOpenChange }: CardCreatorProps) {
             </div>
 
             {/* Position / sub-label */}
-            <div>
+            <div className="transition-all duration-200 focus-within:scale-[1.02] focus-within:drop-shadow-[0_0_12px_rgba(168,85,247,0.65)]">
               <Label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 block">
                 Position / Role
               </Label>
@@ -246,7 +246,7 @@ export default function CardCreator({ open, onOpenChange }: CardCreatorProps) {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 transition-all duration-200 focus-within:scale-[1.02] focus-within:drop-shadow-[0_0_12px_rgba(168,85,247,0.65)]"
                     >
                       <Input
                         value={stat.name}

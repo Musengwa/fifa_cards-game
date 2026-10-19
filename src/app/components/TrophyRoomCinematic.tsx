@@ -189,19 +189,6 @@ function AwardSegment({
         Winner
       </p>
       <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white drop-shadow-lg leading-tight">{winner.member.name}</h3>
-      <p className="text-amber-300 text-sm sm:text-base font-semibold mt-0.5">
-        {winner.votes} vote{winner.votes !== 1 ? 's' : ''}
-      </p>
-      {(runnerUp?.member || thirdPlace?.member) && (
-        <div className="flex lg:flex-col justify-center lg:justify-start gap-3 lg:gap-0.5 mt-2 text-xs text-white/60">
-          {runnerUp?.member && (
-            <span>2nd — {runnerUp.member.name} ({runnerUp.votes})</span>
-          )}
-          {thirdPlace?.member && (
-            <span>3rd — {thirdPlace.member.name} ({thirdPlace.votes})</span>
-          )}
-        </div>
-      )}
     </motion.div>
   );
 

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { User as UserIcon, Download, Camera, Globe2, Shield as ShieldIcon, Plus, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { downloadAsPng } from '../lib/download';
@@ -130,7 +131,7 @@ const SHIELD_THEMES: Record<CardTheme, ShieldTheme> = {
     notRated: 'text-amber-600/60',
     shadow: 'drop-shadow-[0_1px_1px_rgba(255,255,255,0.6)]',
     placeholderIcon: 'text-gray-400/40',
-    shine: 'rgba(255,215,130,0.55)',
+    shine: 'rgba(255,255,255,0.45)',
   },
   blackPurple: {
     bg: purpleShieldBg,
@@ -453,7 +454,7 @@ export default function FifaCard({
       {/* OVR + position */}
       <div
         className="absolute flex flex-col items-center text-center"
-        style={{ top: shield.layout === 'bottomBadges' ? '8%' : '13%', left: '8%', width: '26%' }}
+        style={{ top: shield.layout === 'bottomBadges' ? '10%' : '13%', left: '8%', width: '26%' }}
       >
         <span className={`text-5xl font-black leading-none ${shield.ovr} ${shield.shadow}`}>
           {overall || '—'}
@@ -621,7 +622,7 @@ export default function FifaCard({
           </div>
 
           {/* Name */}
-          <div className="absolute text-center" style={{ top: '57%', left: '4%', width: '92%' }}>
+          <div className="absolute text-center" style={{ top: '57%', left: '7%', width: '86%' }}>
             {edit?.onNameChange ? (
               <input
                 value={user.name}
@@ -646,7 +647,7 @@ export default function FifaCard({
 
           {/* Stats — two columns split by a vertical divider, matching the reference layout */}
           {(leftAttrs.length > 0 || rightAttrs.length > 0 || edit?.onAttrAdd) && (
-            <div className="absolute" style={{ top: '65%', left: '10%', width: '80%', height: '27%' }}>
+            <div className="absolute" style={{ top: '65%', left: '12%', width: '76%', height: '27%' }}>
               <div className={`grid grid-cols-2 divide-x h-full ${shield.divider}`}>
                 <div className="flex flex-col justify-center gap-1.5 pr-3">
                   {leftAttrs.map((attr) => (
@@ -724,7 +725,7 @@ export default function FifaCard({
           </div>
 
           {/* Name */}
-          <div className="absolute text-center" style={{ top: '62%', left: '4%', width: '92%' }}>
+          <div className="absolute text-center" style={{ top: '62%', left: '7%', width: '86%' }}>
             {edit?.onNameChange ? (
               <input
                 value={user.name}
@@ -749,7 +750,7 @@ export default function FifaCard({
 
           {/* Stats — single row, label above value, matching the reference layout */}
           {(attributes.length > 0 || edit?.onAttrAdd) && (
-            <div className="absolute" style={{ top: '71%', left: '6%', width: '88%', height: '13%' }}>
+            <div className="absolute" style={{ top: '71%', left: '8%', width: '84%', height: '13%' }}>
               <div
                 className="grid h-full"
                 style={{ gridTemplateColumns: `repeat(${attributes.length + (edit?.onAttrAdd && edit.canAddAttr !== false ? 1 : 0)}, minmax(0, 1fr))` }}
@@ -870,14 +871,19 @@ export default function FifaCard({
       </motion.div>
 
       {showDownload && (
-        <button
-          onClick={handleDownloadPng}
-          disabled={downloading}
-          className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 disabled:opacity-40"
-        >
-          <Download className="w-3 h-3" />
-          {downloading ? 'Saving…' : 'Download Card'}
-        </button>
+        createPortal(
+          <button
+            type="button"
+            onClick={handleDownloadPng}
+            disabled={downloading}
+            aria-label="Download card"
+            title="Download card"
+            className="card-export-exclude fixed bottom-5 right-5 z-[100] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white shadow-xl backdrop-blur-md transition-colors hover:bg-black/90 disabled:opacity-50"
+          >
+            <Download className="h-5 w-5" />
+          </button>,
+          document.body
+        )
       )}
     </div>
   );
