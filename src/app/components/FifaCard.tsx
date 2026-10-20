@@ -878,7 +878,7 @@ export default function FifaCard({
             disabled={downloading}
             aria-label="Download card"
             title="Download card"
-            className="card-export-exclude fixed bottom-5 right-5 z-[100] flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white shadow-xl backdrop-blur-md transition-colors hover:bg-black/90 disabled:opacity-50"
+            className="card-export-exclude fixed right-5 top-5 z-[100] flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-white/10 text-white shadow-xl backdrop-blur-md transition-colors hover:bg-white/15 disabled:opacity-50"
           >
             <Download className="h-5 w-5" />
           </button>,

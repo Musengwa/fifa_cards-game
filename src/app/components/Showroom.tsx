@@ -169,7 +169,7 @@ function MemberCarousel({
               type="button"
               onClick={() => go(-1)}
               aria-label="Previous card"
-              className="hidden sm:flex absolute left-0 z-20 items-center justify-center w-11 h-11 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-md border border-white/20 transition-colors"
+              className="hidden sm:flex absolute left-0 z-20 items-center justify-center w-11 h-11 rounded-full border border-white/40 bg-white/5 text-white backdrop-blur-md transition-colors hover:bg-white/10"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -177,7 +177,7 @@ function MemberCarousel({
               type="button"
               onClick={() => go(1)}
               aria-label="Next card"
-              className="hidden sm:flex absolute right-0 z-20 items-center justify-center w-11 h-11 rounded-full bg-black/30 hover:bg-black/50 text-white backdrop-blur-md border border-white/20 transition-colors"
+              className="hidden sm:flex absolute right-0 z-20 items-center justify-center w-11 h-11 rounded-full border border-white/40 bg-white/5 text-white backdrop-blur-md transition-colors hover:bg-white/10"
             >
               <ChevronRight className="w-5 h-5" />
             </button>

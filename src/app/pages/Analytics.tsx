@@ -6,6 +6,7 @@ import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
 import { formatAwardName } from '../lib/awards';
 import { useAppTheme } from '../lib/theme';
 import PageLoader from '../components/PageLoader';
+import SessionResultsNav from '../components/SessionResultsNav';
 import { toast } from 'sonner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -120,7 +121,7 @@ export default function Analytics() {
   const axisStyle = { fill: '#94a3b8', fontSize: 11 };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${tokens.bgGradient} p-3 sm:p-6 -mt-20 pt-20`}>
+    <div className={`min-h-screen bg-gradient-to-br ${tokens.bgGradient} p-3 sm:p-6 pb-24`}>
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
@@ -129,7 +130,7 @@ export default function Analytics() {
             onClick={() => navigate(`/group/${groupId}`)}
             variant="ghost"
             size="icon"
-            className="text-white hover:bg-white/10 shrink-0"
+            className={`${group.sessionEnded ? 'hidden' : 'inline-flex'} text-white hover:bg-white/10 shrink-0`}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -290,8 +291,14 @@ export default function Analytics() {
             </div>
           )}
         </div>
-
       </div>
+      {group.sessionEnded && (
+        <SessionResultsNav
+          activeView="analysis"
+          onShowroom={() => navigate(`/group/${groupId}`)}
+          onTrophies={() => navigate(`/group/${groupId}?tab=trophies`)}
+        />
+      )}
     </div>
   );
 }

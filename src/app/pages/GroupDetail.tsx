@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -10,7 +10,7 @@ import { Switch } from '../components/ui/switch';
 import { Slider } from '../components/ui/slider';
 import {
   ArrowLeft, Share2, Settings, Users, TrendingUp, Award, Search, Copy, Check, BarChart3,
-  StopCircle, Trophy, Sparkles, AlertTriangle, User as UserIcon, CheckCircle2, Trash2,
+  StopCircle, Trophy, AlertTriangle, User as UserIcon, CheckCircle2, Trash2,
 } from 'lucide-react';
 import { Checkbox } from '../components/ui/checkbox';
 import { API_BASE_URL, getAuthHeaders } from '../lib/supabase';
@@ -20,6 +20,7 @@ import { useAppTheme } from '../lib/theme';
 import { toast } from 'sonner';
 import Showroom from '../components/Showroom';
 import TrophyRoomCinematic from '../components/TrophyRoomCinematic';
+import SessionResultsNav from '../components/SessionResultsNav';
 import { StarRatingInput } from '../components/StarRating';
 import PageLoader from '../components/PageLoader';
 
@@ -91,6 +92,7 @@ function MemberTile({
 export default function GroupDetail() {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { tokens } = useAppTheme();
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -113,7 +115,9 @@ export default function GroupDetail() {
   const [copied, setCopied] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [sendingInvites, setSendingInvites] = useState<string[]>([]);
-  const [postSessionTab, setPostSessionTab] = useState<'showroom' | 'trophies'>('showroom');
+  const [postSessionTab, setPostSessionTab] = useState<'showroom' | 'trophies'>(
+    searchParams.get('tab') === 'trophies' ? 'trophies' : 'showroom',
+  );
   const [endSessionDialogOpen, setEndSessionDialogOpen] = useState(false);
   const [endSessionConfirmed, setEndSessionConfirmed] = useState(false);
   const [endingSession, setEndingSession] = useState(false);
@@ -491,78 +495,16 @@ export default function GroupDetail() {
   const hasRatedAll = myRatings.length === otherMembers.length;
   const hasVoted = !!myVote;
 
-  // POST-SESSION MODE: Show completely different UI with Showroom, Trophy Room, and Analysis
+  // POST-SESSION MODE: Show the results views after the session ends.
   if (group.sessionEnded) {
     return (
       <div
-        className={`h-screen flex flex-col bg-gradient-to-br -mt-20 pt-20 ${
+        className={`h-screen flex flex-col bg-gradient-to-br ${
           postSessionTab === 'trophies' ? 'from-black via-zinc-950 to-black' : tokens.bgGradient
         }`}
       >
-        {/* Post-Session Header */}
-        <div className="shrink-0">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <Button
-                  onClick={() => navigate('/dashboard')}
-                  variant="ghost"
-                  size="icon"
-                  className="text-white hover:bg-white/10"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-                <div>
-                  <h1 className="text-lg sm:text-2xl font-bold text-white flex items-center gap-2">
-                    <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 ${tokens.accentText}`} />
-                    {group.name}
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-300">Session Ended • Results Showcase</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Post-Session Navigation — buttons keep their natural width and the row
-                scrolls horizontally on narrow screens instead of squeezing labels. */}
-            <div className="flex gap-2 sm:gap-4 mt-4 overflow-x-auto">
-              <Button
-                onClick={() => setPostSessionTab('showroom')}
-                variant={postSessionTab === 'showroom' ? 'default' : 'ghost'}
-                className={`shrink-0 ${
-                  postSessionTab === 'showroom'
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                    : 'text-slate-300 hover:bg-white/10'
-                }`}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Showroom
-              </Button>
-              <Button
-                onClick={() => setPostSessionTab('trophies')}
-                variant={postSessionTab === 'trophies' ? 'default' : 'ghost'}
-                className={`shrink-0 ${
-                  postSessionTab === 'trophies'
-                    ? 'bg-gradient-to-r from-yellow-600 to-amber-600 text-white'
-                    : 'text-slate-300 hover:bg-white/10'
-                }`}
-              >
-                <Trophy className="w-4 h-4 mr-2" />
-                Trophy Room
-              </Button>
-              <Button
-                onClick={() => navigate(`/group/${groupId}/analytics`)}
-                variant="ghost"
-                className="shrink-0 text-slate-300 hover:bg-white/10"
-              >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Analysis
-              </Button>
-            </div>
-          </div>
-        </div>
-
         {/* Post-Session Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto pb-20">
           {postSessionTab === 'showroom' && (
             <Showroom
               members={members}
@@ -585,7 +527,14 @@ export default function GroupDetail() {
             />
           )}
         </div>
-      </div>
+
+        <SessionResultsNav
+          activeView={postSessionTab}
+          onShowroom={() => setPostSessionTab('showroom')}
+          onTrophies={() => setPostSessionTab('trophies')}
+          onAnalysis={() => navigate(`/group/${groupId}/analytics`)}
+        />
+       </div>
     );
   }
 
@@ -600,7 +549,7 @@ export default function GroupDetail() {
               className="text-white mb-3 sm:mb-4"
               onClick={() => navigate('/dashboard')}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="hidden sm:block w-4 h-4 mr-2" />
               <span className="hidden sm:inline">Back to Dashboard</span>
               <span className="sm:hidden">Back</span>
             </Button>
