@@ -2,9 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { Trophy, Sparkles, ChevronDown, User as UserIcon } from 'lucide-react';
-import FifaCard from './FifaCard';
 import { isMainAward, formatAwardName } from '../lib/awards';
-import { useAppTheme } from '../lib/theme';
 
 const MAIN_AWARD_COLORS = ['#facc15', '#fbbf24', '#f59e0b', '#fde68a', '#ffffff'];
 
@@ -51,15 +49,6 @@ interface TrophyRoomProps {
 }
 
 type SegmentStatus = 'active' | 'completed';
-
-// A different ambient accent per segment so each award reads as its own distinct
-// scene rather than a continuation of the last one.
-const ACCENTS = [
-  'from-purple-950/50 via-black to-amber-950/30',
-  'from-sky-950/50 via-black to-amber-950/30',
-  'from-emerald-950/50 via-black to-amber-950/30',
-  'from-rose-950/50 via-black to-amber-950/30',
-];
 
 /** Small circular headshot used for the floating/hovering candidate cloud. */
 function CandidateAvatar({
@@ -125,7 +114,6 @@ function AwardSegment({
   status: SegmentStatus;
   onNext: () => void;
 }) {
-  const { tokens } = useAppTheme();
   const [revealed, setRevealed] = useState(status === 'completed');
   const [showNext, setShowNext] = useState(false);
   const main = isMainAward(award.name);
@@ -172,8 +160,19 @@ function AwardSegment({
       delay: Math.random() * 1.5,
     }))
   );
-
-  const accent = ACCENTS[index % ACCENTS.length];
+  const [lights] = useState(() =>
+    Array.from({ length: 8 }, (_, i) => ({
+      left: 8 + i * 11 + (i % 2 === 0 ? 2 : -2),
+      top: 12 + ((i * 17) % 64),
+      duration: 4 + (i % 5) * 1.2,
+      dx: 10 + (i % 4) * 12,
+      dy: 12 + (i % 3) * 14,
+      delay: i * 0.6,
+      size: 36 + (i % 4) * 18,
+      opacity: 0.22 + (i % 3) * 0.14,
+      color: ['#facc15', '#f59e0b', '#60a5fa', '#f472b6', '#a78bfa', '#34d399'][i % 6],
+    }))
+  );
 
   // Built once and embedded in two different spots below — grouped into the
   // side column on desktop (next to the stage) but placed after the stage on
@@ -216,8 +215,36 @@ function AwardSegment({
 
   return (
     <section
-      className={`relative h-full w-full overflow-hidden bg-gradient-to-br ${accent}`}
+      className="relative h-full w-full overflow-hidden bg-black"
     >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(250,204,21,0.18),_transparent_30%),radial-gradient(circle_at_bottom,_rgba(96,165,250,0.12),_transparent_30%)]" />
+      {lights.map((light, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full blur-md pointer-events-none"
+          style={{
+            left: `${light.left}%`,
+            top: `${light.top}%`,
+            width: `${light.size}px`,
+            height: `${light.size}px`,
+            opacity: light.opacity,
+            background: `radial-gradient(circle, ${light.color} 0%, rgba(255,255,255,0.1) 50%, transparent 100%)`,
+          }}
+          animate={{
+            x: [0, light.dx, -light.dx * 0.8, 0],
+            y: [0, -light.dy, light.dy * 0.8, 0],
+            opacity: [light.opacity, light.opacity + 0.28, light.opacity],
+            scale: [1, 1.35, 1],
+          }}
+          transition={{
+            duration: light.duration,
+            delay: light.delay,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      ))}
+
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="w-[24rem] h-[24rem] sm:w-[32rem] sm:h-[32rem] bg-amber-500/10 rounded-full blur-3xl" />
       </div>
@@ -290,9 +317,7 @@ function AwardSegment({
             </motion.div>
           ))}
 
-        {/* Flip card: mystery back → winner's FIFA card front — bigger stage for the main award.
-            Width-only sizing (height follows from aspectRatio) so it never needs to compete
-            with an explicit height — at these widths it comfortably clears the vertical budget. */}
+        {/* Winner showcase: black stage with moving light accents, a trophy, and a stylised profile panel instead of a FIFA card. */}
         <div className="relative z-10" style={{ perspective: 1500 }}>
           <motion.div
             className={`relative ${main ? 'w-56 sm:w-64 lg:w-72' : 'w-44 sm:w-48 lg:w-52'}`}
@@ -301,36 +326,63 @@ function AwardSegment({
             transition={{ duration: 1.1, ease: 'easeInOut' }}
           >
             <div
-              className={`absolute inset-0 rounded-2xl bg-gradient-to-br from-zinc-900 via-black to-zinc-900 shadow-2xl flex flex-col items-center justify-center px-4 text-center ${
-                main ? 'border-4 border-amber-300' : 'border-4 border-amber-400/50'
-              }`}
+              className={`absolute inset-0 rounded-[2rem] border ${main ? 'border-amber-300/60' : 'border-amber-400/30'} bg-[radial-gradient(circle_at_top,_rgba(250,204,21,0.18),_rgba(8,8,8,0.96)_38%,_#020202_100%)] shadow-[0_0_50px_rgba(250,204,21,0.12)] flex flex-col items-center justify-center px-4 text-center`}
               style={{ backfaceVisibility: 'hidden' }}
             >
-              <Trophy className={`text-amber-400 mb-4 animate-pulse ${main ? 'w-14 h-14 sm:w-16 sm:h-16' : 'w-10 h-10 sm:w-12 sm:h-12'}`} />
+              <div className="relative mb-5 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full bg-amber-400/20 blur-2xl" />
+                <div className="relative flex items-center justify-center rounded-full border border-amber-400/40 bg-black/80 p-4">
+                  <Trophy className={`text-amber-400 ${main ? 'w-14 h-14 sm:w-16 sm:h-16' : 'w-10 h-10 sm:w-12 sm:h-12'}`} />
+                </div>
+              </div>
               <p className="text-amber-300/70 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] mb-2">
                 {main ? 'Main Award' : 'Award'}
               </p>
-              <h3 className="text-lg sm:text-2xl font-black text-white uppercase tracking-wide leading-tight">
+              <h3 className="text-lg sm:text-2xl font-black text-white uppercase tracking-wide leading-tight max-w-[11rem]">
                 {displayName}
               </h3>
               <p className="mt-6 text-5xl font-black text-amber-400/30 select-none">?</p>
             </div>
 
             <div
-              className="absolute inset-0 flex items-center justify-center"
+              className="absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(250,204,21,0.2),_rgba(17,17,17,0.92)_32%,_#020202_100%)] border border-white/10 shadow-[0_0_40px_rgba(250,204,21,0.12)] flex items-center justify-center px-5"
               style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
             >
               {winner?.member ? (
-                <FifaCard
-                  user={winner.member}
-                  attributes={attributes}
-                  ratings={ratings[winner.member.id] || {}}
-                  peerRating={starRatings?.[winner.member.id] || null}
-                  cardTheme={tokens.cardTheme}
-                />
+                <div className="relative h-full w-full flex flex-col items-center justify-center overflow-hidden rounded-[2rem] pt-6 pb-5">
+                  <div className="absolute inset-x-6 top-3 h-20 rounded-full bg-amber-400/15 blur-3xl" />
+                  <div className="relative mb-4 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full bg-amber-400/25 blur-xl" />
+                    <div className="relative flex items-center justify-center rounded-full border border-amber-300/60 bg-black/70 p-2 shadow-[0_0_25px_rgba(250,204,21,0.25)]">
+                      <Trophy className="w-8 h-8 sm:w-9 sm:h-9 text-amber-300" />
+                    </div>
+                  </div>
+
+                  <div className="relative mb-3">
+                    <div className="absolute inset-0 rounded-full bg-yellow-400/20 blur-2xl" />
+                    <div className="relative overflow-hidden rounded-full border-4 border-yellow-400/65 shadow-[0_0_30px_rgba(250,204,21,0.35)] w-24 h-24 sm:w-28 sm:h-28">
+                      {winner.member.profilePicUrl ? (
+                        <img src={winner.member.profilePicUrl} alt={winner.member.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-slate-700 flex items-center justify-center">
+                          <UserIcon className="w-1/2 h-1/2 text-slate-300" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.38em] text-amber-200/80">Winner</p>
+                    <h3 className="mt-2 text-xl sm:text-2xl font-black text-white tracking-tight">{winner.member.name}</h3>
+                    <p className="mt-2 text-[10px] sm:text-xs uppercase tracking-[0.3em] text-white/50">{displayName}</p>
+                  </div>
+                </div>
               ) : (
-                <div className={`aspect-[741/1186] rounded-2xl bg-gradient-to-br from-zinc-800 to-black border-4 border-white/10 flex items-center justify-center px-6 text-center ${main ? 'w-56 sm:w-64 lg:w-72' : 'w-44 sm:w-48 lg:w-52'}`}>
-                  <p className="text-white/50 text-sm">No votes were cast for this award</p>
+                <div className={`rounded-[2rem] bg-black/80 border border-white/10 flex items-center justify-center px-6 text-center ${main ? 'w-full h-full' : 'w-full h-full'}`}>
+                  <div className="flex flex-col items-center gap-3 text-white/70">
+                    <Trophy className="w-8 h-8 text-amber-300" />
+                    <p className="text-sm">No votes were cast for this award</p>
+                  </div>
                 </div>
               )}
             </div>
