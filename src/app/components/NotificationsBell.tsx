@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "./ui/button";
+import { useAppTheme } from "../lib/theme";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ function notificationIcon(type: string) {
 }
 
 export default function NotificationsBell() {
+  const { tokens } = useAppTheme();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [listOpen, setListOpen] = useState(false);
@@ -95,7 +97,7 @@ export default function NotificationsBell() {
 
   return (
     <>
-      <Button variant="ghost" size="icon" aria-label="Notifications" onClick={openList} className="relative">
+      <Button variant="ghost" size="icon" aria-label="Notifications" onClick={openList} className={`relative ${tokens.navText} hover:bg-transparent hover:opacity-80`}>
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500 ring-2 ring-black/20" />

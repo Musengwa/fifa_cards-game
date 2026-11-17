@@ -1,5 +1,6 @@
-import { Lightbulb, Shield, Trophy } from 'lucide-react';
+import { Lightbulb, Shield, Trophy, type LucideIcon } from 'lucide-react';
 import { Button } from './ui/button';
+import { useAppTheme } from '../lib/theme';
 
 type SessionResultsView = 'showroom' | 'trophies' | 'analysis';
 
@@ -16,56 +17,49 @@ export default function SessionResultsNav({
   onTrophies,
   onAnalysis,
 }: SessionResultsNavProps) {
+  const { theme, tokens } = useAppTheme();
+
+  // The trophy room always paints its own black stage, so treat it as a dark
+  // background whatever the app theme is.
+  const onLight = theme === 'whiteGold' && activeView !== 'trophies';
+  const iconColor = onLight ? tokens.navText : 'text-white';
+  const boxColor = onLight
+    ? 'bg-white/40 border-yellow-500/40 hover:bg-white/60'
+    : 'bg-white/10 border-white/20 hover:bg-white/15';
+
+  const items: Array<{ view: SessionResultsView; label: string; Icon: LucideIcon; onClick?: () => void }> = [
+    { view: 'showroom', label: 'Showroom', Icon: Shield, onClick: onShowroom },
+    { view: 'trophies', label: 'Trophy Room', Icon: Trophy, onClick: onTrophies },
+    { view: 'analysis', label: 'Analysis', Icon: Lightbulb, onClick: onAnalysis },
+  ];
+
   return (
     <nav
+      data-keep-colors
       aria-label="Session results"
-      className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 flex justify-center gap-3"
+      className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 flex justify-center gap-6"
     >
-      <Button
-        onClick={onShowroom}
-        variant="ghost"
-        size="icon"
-        aria-label="Showroom"
-        title="Showroom"
-        aria-current={activeView === 'showroom' ? 'page' : undefined}
-        className={`h-12 w-12 rounded-full border bg-white/5 text-white shadow-lg backdrop-blur-md hover:bg-white/10 ${
-          activeView === 'showroom'
-            ? 'border-primary text-primary ring-1 ring-primary/40'
-            : 'border-white/40'
-        }`}
-      >
-        <Shield className="h-5 w-5" />
-      </Button>
-      <Button
-        onClick={onTrophies}
-        variant="ghost"
-        size="icon"
-        aria-label="Trophy Room"
-        title="Trophy Room"
-        aria-current={activeView === 'trophies' ? 'page' : undefined}
-        className={`h-12 w-12 rounded-full border bg-white/5 text-white shadow-lg backdrop-blur-md hover:bg-white/10 ${
-          activeView === 'trophies'
-            ? 'border-primary text-primary ring-1 ring-primary/40'
-            : 'border-white/40'
-        }`}
-      >
-        <Trophy className="h-5 w-5" />
-      </Button>
-      <Button
-        onClick={onAnalysis}
-        variant="ghost"
-        size="icon"
-        aria-label="Analysis"
-        title="Analysis"
-        aria-current={activeView === 'analysis' ? 'page' : undefined}
-        className={`h-12 w-12 rounded-full border bg-white/5 text-white shadow-lg backdrop-blur-md hover:bg-white/10 ${
-          activeView === 'analysis'
-            ? 'border-primary text-primary ring-1 ring-primary/40'
-            : 'border-white/40'
-        }`}
-      >
-        <Lightbulb className="h-5 w-5" />
-      </Button>
+      {items.map(({ view, label, Icon, onClick }) => {
+        const active = activeView === view;
+        return (
+          <Button
+            key={view}
+            onClick={onClick}
+            variant="ghost"
+            size="icon"
+            aria-label={label}
+            title={label}
+            aria-current={active ? 'page' : undefined}
+            className={`h-14 w-14 rounded-xl border-2 backdrop-blur-md shadow-lg shadow-black/20 transition-colors ${boxColor} ${
+              active
+                ? 'border-primary text-primary hover:text-primary'
+                : `${iconColor} ${onLight ? 'hover:text-gray-900' : 'hover:text-white'}`
+            }`}
+          >
+            <Icon className="size-7" strokeWidth={2.5} />
+          </Button>
+        );
+      })}
     </nav>
   );
 }

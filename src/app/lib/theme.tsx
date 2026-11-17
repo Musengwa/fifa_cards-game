@@ -17,6 +17,8 @@ interface ThemeTokens {
   gradientBtn: string;
   border: string;
   ring: string;
+  /** Text/icon color for the see-through top and bottom navs, readable on this theme's page background. */
+  navText: string;
   /** Mirrored into CSS custom properties so every shadcn primitive (Button, Input,
    * focus rings, ...) that reads --primary/--ring/--accent re-colors for free. */
   cssVars: {
@@ -40,6 +42,7 @@ export const APP_THEMES: Record<AppTheme, ThemeTokens> = {
     gradientBtn: 'from-green-600 to-yellow-500',
     border: 'border-yellow-500/40',
     ring: 'ring-yellow-400',
+    navText: 'text-white',
     cssVars: {
       primary: '#eab308',
       primaryForeground: '#052e12',
@@ -52,19 +55,20 @@ export const APP_THEMES: Record<AppTheme, ThemeTokens> = {
     id: 'whiteGold',
     name: 'Legendary',
     cardTheme: 'whiteGold',
-    bgGradient: 'from-amber-950 via-yellow-900 to-amber-950',
-    accentText: 'text-amber-400',
-    accentTextSecondary: 'text-amber-200',
-    accentBg: 'bg-amber-500',
-    gradientBtn: 'from-amber-400 to-yellow-500',
-    border: 'border-amber-400/40',
-    ring: 'ring-amber-400',
+    bgGradient: 'from-white via-yellow-50 to-yellow-100',
+    accentText: 'text-yellow-600',
+    accentTextSecondary: 'text-gray-600',
+    accentBg: 'bg-yellow-500',
+    gradientBtn: 'from-yellow-400 to-amber-400',
+    border: 'border-yellow-500/50',
+    ring: 'ring-yellow-500',
+    navText: 'text-gray-900',
     cssVars: {
-      primary: '#f59e0b',
-      primaryForeground: '#1c1917',
-      ring: '#fbbf24',
-      accent: '#451a03',
-      accentForeground: '#ffffff',
+      primary: '#eab308',
+      primaryForeground: '#111827',
+      ring: '#eab308',
+      accent: '#fef9c3',
+      accentForeground: '#111827',
     },
   },
   blackPurple: {
@@ -78,6 +82,7 @@ export const APP_THEMES: Record<AppTheme, ThemeTokens> = {
     gradientBtn: 'from-purple-600 to-fuchsia-600',
     border: 'border-purple-500/60',
     ring: 'ring-purple-500',
+    navText: 'text-white',
     cssVars: {
       primary: '#9333ea',
       primaryForeground: '#ffffff',

@@ -145,7 +145,7 @@ export default function Analytics() {
 
         {/* Session-ended banner */}
         {group.sessionEnded && (
-          <div className="mb-6 bg-gradient-to-r from-purple-900/60 to-fuchsia-900/60 border border-purple-500/30 rounded-xl px-5 py-4 flex items-center gap-3">
+          <div data-keep-colors className="mb-6 bg-gradient-to-r from-purple-900/60 to-fuchsia-900/60 border border-purple-500/30 rounded-xl px-5 py-4 flex items-center gap-3">
             <Lock className="w-5 h-5 text-purple-400 shrink-0" />
             <div>
               <p className="text-purple-200 font-semibold text-sm">Session Ended: Final Results</p>

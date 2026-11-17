@@ -1,11 +1,14 @@
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { User as UserIcon, Download, Camera, Globe2, Shield as ShieldIcon, Plus, X } from 'lucide-react';
+import { User as UserIcon, Download, Camera, Plus, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { downloadAsPng } from '../lib/download';
 import { StarRatingDisplay } from './StarRating';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { toast } from 'sonner';
+import CardIcon from './CardIcon';
+import { CLUBS } from './ClubPicker';
+import { NATIONS } from './NationPicker';
 
 /** Playable positions, ordered keeper → outfield, for the on-card position picker. */
 export const POSITIONS = [
@@ -404,6 +407,11 @@ export default function FifaCard({
 
   const shield = SHIELD_THEMES[cardTheme];
 
+  // Saved icon URLs are build-hashed asset paths that can go stale after a
+  // redeploy, so look the image up by name first and keep the saved URL as backup.
+  const flagSources = [NATIONS.find((n) => n.name === user.nationality)?.iconUrl, user.nationalityFlagUrl];
+  const clubSources = [CLUBS.find((c) => c.name === user.club)?.iconUrl, user.clubLogoUrl];
+
   const shineSweep = (
     <motion.div
       aria-hidden
@@ -507,28 +515,10 @@ export default function FifaCard({
                   className="bg-transparent border-0 p-0 m-0 block w-full"
                   aria-label="Change nationality"
                 >
-                  {user.nationalityFlagUrl ? (
-                    <img
-                      src={user.nationalityFlagUrl}
-                      alt=""
-                      aria-hidden
-                      crossOrigin="anonymous"
-                      className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
-                    />
-                  ) : (
-                    <span className="flex w-full aspect-[3/2] items-center justify-center rounded-[2px] border border-dashed border-current opacity-50">
-                      <Globe2 className="w-3 h-3" />
-                    </span>
-                  )}
+                  <CardIcon sources={flagSources} kind="flag" />
                 </button>
               ) : (
-                <img
-                  src={user.nationalityFlagUrl!}
-                  alt=""
-                  aria-hidden
-                  crossOrigin="anonymous"
-                  className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
-                />
+                <CardIcon sources={flagSources} kind="flag" />
               )}
             </div>
           )}
@@ -546,28 +536,10 @@ export default function FifaCard({
                   className="bg-transparent border-0 p-0 m-0 block w-full"
                   aria-label="Change club"
                 >
-                  {user.clubLogoUrl ? (
-                    <img
-                      src={user.clubLogoUrl}
-                      alt=""
-                      aria-hidden
-                      crossOrigin="anonymous"
-                      className="w-full aspect-square object-contain drop-shadow"
-                    />
-                  ) : (
-                    <span className="flex w-full aspect-square items-center justify-center rounded-full border border-dashed border-current opacity-50">
-                      <ShieldIcon className="w-3 h-3" />
-                    </span>
-                  )}
+                  <CardIcon sources={clubSources} kind="club" />
                 </button>
               ) : (
-                <img
-                  src={user.clubLogoUrl!}
-                  alt=""
-                  aria-hidden
-                  crossOrigin="anonymous"
-                  className="w-full aspect-square object-contain drop-shadow"
-                />
+                <CardIcon sources={clubSources} kind="club" />
               )}
             </div>
           )}
@@ -679,8 +651,8 @@ export default function FifaCard({
             className="absolute overflow-hidden"
             style={{
               top: '12%',
-              left: '33%',
-              width: '58%',
+              left: '41%',
+              width: '52%',
               height: '43%',
               WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
               maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
@@ -786,28 +758,10 @@ export default function FifaCard({
                       className="bg-transparent border-0 p-0 m-0 block w-full"
                       aria-label="Change nationality"
                     >
-                      {user.nationalityFlagUrl ? (
-                        <img
-                          src={user.nationalityFlagUrl}
-                          alt=""
-                          aria-hidden
-                          crossOrigin="anonymous"
-                          className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
-                        />
-                      ) : (
-                        <span className="flex w-full aspect-[3/2] items-center justify-center rounded-[2px] border border-dashed border-current opacity-50">
-                          <Globe2 className="w-3 h-3" />
-                        </span>
-                      )}
+                      <CardIcon sources={flagSources} kind="flag" />
                     </button>
                   ) : (
-                    <img
-                      src={user.nationalityFlagUrl!}
-                      alt=""
-                      aria-hidden
-                      crossOrigin="anonymous"
-                      className="w-full aspect-[3/2] object-cover rounded-[2px] shadow"
-                    />
+                    <CardIcon sources={flagSources} kind="flag" />
                   )}
                 </div>
               )}
@@ -820,28 +774,10 @@ export default function FifaCard({
                       className="bg-transparent border-0 p-0 m-0 block w-full"
                       aria-label="Change club"
                     >
-                      {user.clubLogoUrl ? (
-                        <img
-                          src={user.clubLogoUrl}
-                          alt=""
-                          aria-hidden
-                          crossOrigin="anonymous"
-                          className="w-full aspect-square object-contain drop-shadow"
-                        />
-                      ) : (
-                        <span className="flex w-full aspect-square items-center justify-center rounded-full border border-dashed border-current opacity-50">
-                          <ShieldIcon className="w-3 h-3" />
-                        </span>
-                      )}
+                      <CardIcon sources={clubSources} kind="club" />
                     </button>
                   ) : (
-                    <img
-                      src={user.clubLogoUrl!}
-                      alt=""
-                      aria-hidden
-                      crossOrigin="anonymous"
-                      className="w-full aspect-square object-contain drop-shadow"
-                    />
+                    <CardIcon sources={clubSources} kind="club" />
                   )}
                 </div>
               )}
@@ -859,7 +795,7 @@ export default function FifaCard({
   );
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div data-keep-colors className="flex flex-col items-center gap-3">
       <motion.div
         // The idle float looks great on a read-only card, but a card you're actively
         // typing/tapping into shouldn't drift under the cursor — hold it still in edit mode.

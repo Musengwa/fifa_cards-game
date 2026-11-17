@@ -52,12 +52,12 @@ export default function TopBar() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
-      <div className="backdrop-blur-sm bg-white/6 dark:bg-black/25 border-b border-white/6">
+      <div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/') }>
               <Trophy className={`w-6 h-6 ${tokens.accentText}`} />
-              <span className="text-lg font-black text-white">FIFA Card Rank</span>
+              <span className={`text-lg font-black ${tokens.navText}`}>FIFA Card Rank</span>
             </div>
 
             <div className="flex items-center gap-1">
@@ -65,7 +65,7 @@ export default function TopBar() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Open menu" className="relative">
+                  <Button variant="ghost" size="icon" aria-label="Open menu" className={`relative ${tokens.navText} hover:bg-transparent hover:opacity-80`}>
                     <Menu className="w-5 h-5" />
                     {pendingInviteCount > 0 && (
                       <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500 ring-2 ring-black/20" />
@@ -144,7 +144,7 @@ export default function TopBar() {
                     </span>
                   )}
                   <span className={`w-8 h-8 rounded-full bg-gradient-to-br ${t.gradientBtn}`} />
-                  <span className="text-xs font-semibold text-white text-center">{t.name}</span>
+                  <span className={`text-xs font-semibold text-center ${t.navText}`}>{t.name}</span>
                 </button>
               );
             })}

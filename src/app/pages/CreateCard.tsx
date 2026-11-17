@@ -166,7 +166,7 @@ export default function CreateCard() {
     cardTheme === 'whiteGold' ? 'text-amber-700' : 'text-white/60';
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${panelBg}`}>
+    <div data-keep-colors className={`min-h-screen bg-gradient-to-br ${panelBg}`}>
       {/* Header */}
       <div className="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">

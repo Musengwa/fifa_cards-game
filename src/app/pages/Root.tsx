@@ -9,7 +9,7 @@ export default function Root() {
   const showTopBar = isAuthenticated() && location.pathname !== '/create-card';
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${tokens.bgGradient} ${showTopBar ? 'pt-20' : ''}`}>
+    <div data-app-surface className={`min-h-screen bg-gradient-to-br ${tokens.bgGradient} ${showTopBar ? 'pt-20' : ''}`}>
       {showTopBar && <TopBar />}
       <Outlet />
     </div>

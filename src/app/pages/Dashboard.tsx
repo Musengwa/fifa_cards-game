@@ -120,12 +120,12 @@ export default function Dashboard() {
               >
                 {/* Session status banner */}
                 {group.sessionEnded ? (
-                  <div className="bg-gradient-to-r from-purple-700 to-fuchsia-700 text-white text-xs font-semibold px-3 py-1 flex items-center gap-1.5">
+                  <div data-keep-colors className="bg-gradient-to-r from-purple-700 to-fuchsia-700 text-white text-xs font-semibold px-3 py-1 flex items-center gap-1.5">
                     <Lock className="w-3 h-3" />
                     Session Ended: Results Available
                   </div>
                 ) : (
-                  <div className="bg-gradient-to-r from-green-700 to-emerald-700 text-white text-xs font-semibold px-3 py-1 flex items-center gap-1.5">
+                  <div data-keep-colors className="bg-gradient-to-r from-green-700 to-emerald-700 text-white text-xs font-semibold px-3 py-1 flex items-center gap-1.5">
                     <Clock className="w-3 h-3" />
                     Active Session
                   </div>

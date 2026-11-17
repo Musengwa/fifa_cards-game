@@ -179,3 +179,24 @@
     line-height: 1.5;
   }
 }
+
+
+/* Legendary (white & gold) has a light page background, but most pages were
+   written with white-on-dark utilities. Inside the themed surface, remap those to
+   dark text and soft gold panels. Anything painting its own dark surface (cards,
+   trophy room, coloured badges) opts out with [data-keep-colors]. */
+:root[data-app-theme="whiteGold"] [data-app-surface] .text-white:not([data-keep-colors], [data-keep-colors] *) { color: rgb(17 24 39); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .text-white\/80:not([data-keep-colors], [data-keep-colors] *) { color: rgb(17 24 39 / 0.8); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .text-white\/70:not([data-keep-colors], [data-keep-colors] *) { color: rgb(17 24 39 / 0.7); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .text-white\/60:not([data-keep-colors], [data-keep-colors] *) { color: rgb(17 24 39 / 0.6); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .text-white\/50:not([data-keep-colors], [data-keep-colors] *) { color: rgb(17 24 39 / 0.5); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .text-white\/40:not([data-keep-colors], [data-keep-colors] *) { color: rgb(17 24 39 / 0.4); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .text-white\/20:not([data-keep-colors], [data-keep-colors] *) { color: rgb(17 24 39 / 0.2); }
+:root[data-app-theme="whiteGold"] [data-app-surface] :is(.text-green-100, .text-green-200, .text-purple-200, .text-yellow-200, .text-amber-200):not([data-keep-colors], [data-keep-colors] *) { color: rgb(75 85 99); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .bg-white\/5:not([data-keep-colors], [data-keep-colors] *) { background-color: rgb(202 138 4 / 0.05); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .bg-white\/10:not([data-keep-colors], [data-keep-colors] *) { background-color: rgb(202 138 4 / 0.08); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .bg-white\/15:not([data-keep-colors], [data-keep-colors] *) { background-color: rgb(202 138 4 / 0.11); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .bg-white\/20:not([data-keep-colors], [data-keep-colors] *) { background-color: rgb(202 138 4 / 0.14); }
+:root[data-app-theme="whiteGold"] [data-app-surface] .bg-white\/30:not([data-keep-colors], [data-keep-colors] *) { background-color: rgb(202 138 4 / 0.2); }
+:root[data-app-theme="whiteGold"] [data-app-surface] :is(.border-white\/10, .border-white\/20):not([data-keep-colors], [data-keep-colors] *) { border-color: rgb(202 138 4 / 0.25); }
+:root[data-app-theme="whiteGold"] [data-app-surface] :is(.border-white\/30, .border-white\/40):not([data-keep-colors], [data-keep-colors] *) { border-color: rgb(202 138 4 / 0.45); }

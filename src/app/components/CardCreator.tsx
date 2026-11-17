@@ -116,7 +116,7 @@ export default function CardCreator({ open, onOpenChange }: CardCreatorProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] overflow-y-auto p-0">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-900 via-fuchsia-900 to-purple-900 p-4 sm:p-6 rounded-t-lg">
+        <div data-keep-colors className="bg-gradient-to-r from-purple-900 via-fuchsia-900 to-purple-900 p-4 sm:p-6 rounded-t-lg">
           <DialogHeader>
             <DialogTitle className="text-white text-xl sm:text-2xl font-black flex items-center gap-2">
               <Sparkles className="w-6 h-6 text-yellow-400" />
