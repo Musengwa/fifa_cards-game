@@ -288,7 +288,7 @@ function AttrRow({ attr, ratings, hasRatings, shield, edit }: AttrEditRowProps) 
         />
       ) : (
         <span className={`text-base font-black ${shield.statValue} ${shield.shadow}`}>
-          {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
+          {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '-'}
         </span>
       )}
       {edit?.onAttrNameChange ? (
@@ -353,7 +353,7 @@ function AttrColumn({ attr, ratings, hasRatings, shield, edit }: AttrEditRowProp
         />
       ) : (
         <span className={`text-sm font-black ${shield.statValue} ${shield.shadow}`}>
-          {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '—'}
+          {hasRatings && ratings[attr.id] ? Math.round(ratings[attr.id]) : '-'}
         </span>
       )}
     </div>
@@ -454,10 +454,10 @@ export default function FifaCard({
       {/* OVR + position */}
       <div
         className="absolute flex flex-col items-center text-center"
-        style={{ top: '13%', left: shield.layout === 'bottomBadges' ? '9%' : '8%', width: '26%' }}
+        style={{ top: '16%', left: shield.layout === 'bottomBadges' ? '12%' : '11%', width: '24%' }}
       >
-        <span className={`text-5xl font-black leading-none ${shield.ovr} ${shield.shadow}`}>
-          {overall || '—'}
+        <span className={`text-5xl font-semibold leading-none ${shield.ovr} ${shield.shadow}`}>
+          {overall || '-'}
         </span>
         {edit?.onPositionChange ? (
           <Popover>
@@ -877,7 +877,7 @@ export default function FifaCard({
             disabled={downloading}
             aria-label="Download card"
             title="Download card"
-            className="card-export-exclude fixed right-5 top-5 z-[100] flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-white/10 text-white shadow-xl backdrop-blur-md transition-colors hover:bg-white/15 disabled:opacity-50"
+            className="card-export-exclude fixed right-5 top-24 z-[100] flex h-12 w-12 items-center justify-center rounded-full border border-white/40 bg-white/10 text-white shadow-xl backdrop-blur-md transition-colors hover:bg-white/15 disabled:opacity-50"
           >
             <Download className="h-5 w-5" />
           </button>,

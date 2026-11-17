@@ -208,7 +208,7 @@ function AwardSegment({
         animate={{ opacity: 1 }}
         className="text-amber-300/80 text-xs sm:text-sm flex items-center gap-2"
       >
-        <Sparkles className="w-4 h-4" /> That's every award — champions forever <Sparkles className="w-4 h-4" />
+        <Sparkles className="w-4 h-4" /> That's every award, champions forever <Sparkles className="w-4 h-4" />
       </motion.p>
     )
   );
@@ -489,7 +489,7 @@ export default function TrophyRoomCinematic({
             key={data.award.id}
             onClick={() => viewSegment(i)}
             disabled={i > activeIndex}
-            title={i <= activeIndex ? formatAwardName(data.award.name) : `Locked — finish award ${activeIndex + 1} first`}
+            title={i <= activeIndex ? formatAwardName(data.award.name) : `Locked: finish award ${activeIndex + 1} first`}
             aria-label={`View ${formatAwardName(data.award.name)}`}
             className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all ${
               i === viewingIndex

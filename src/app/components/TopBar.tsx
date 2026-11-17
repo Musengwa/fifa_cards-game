@@ -122,7 +122,7 @@ export default function TopBar() {
               App Theme
             </DialogTitle>
             <DialogDescription>
-              Choose the color theme for the whole app — cards, showroom, and trophy room all follow it.
+              Choose the color theme for the whole app. Cards, showroom, and trophy room all follow it.
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

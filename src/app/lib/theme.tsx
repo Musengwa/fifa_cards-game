@@ -31,7 +31,7 @@ interface ThemeTokens {
 export const APP_THEMES: Record<AppTheme, ThemeTokens> = {
   greenOrange: {
     id: 'greenOrange',
-    name: 'Yellow & Green',
+    name: 'Classic',
     cardTheme: 'greenOrange',
     bgGradient: 'from-green-950 via-emerald-900 to-green-950',
     accentText: 'text-yellow-400',
@@ -50,7 +50,7 @@ export const APP_THEMES: Record<AppTheme, ThemeTokens> = {
   },
   whiteGold: {
     id: 'whiteGold',
-    name: 'White & Gold',
+    name: 'Legendary',
     cardTheme: 'whiteGold',
     bgGradient: 'from-amber-950 via-yellow-900 to-amber-950',
     accentText: 'text-amber-400',
@@ -69,7 +69,7 @@ export const APP_THEMES: Record<AppTheme, ThemeTokens> = {
   },
   blackPurple: {
     id: 'blackPurple',
-    name: 'Black & Purple',
+    name: 'Custom',
     cardTheme: 'blackPurple',
     bgGradient: 'from-black via-purple-950 to-black',
     accentText: 'text-purple-400',

@@ -148,7 +148,7 @@ export default function Analytics() {
           <div className="mb-6 bg-gradient-to-r from-purple-900/60 to-fuchsia-900/60 border border-purple-500/30 rounded-xl px-5 py-4 flex items-center gap-3">
             <Lock className="w-5 h-5 text-purple-400 shrink-0" />
             <div>
-              <p className="text-purple-200 font-semibold text-sm">Session Ended — Final Results</p>
+              <p className="text-purple-200 font-semibold text-sm">Session Ended: Final Results</p>
               <p className="text-purple-300/70 text-xs mt-0.5">These are the definitive analytics. No further changes can be made.</p>
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function Analytics() {
         {/* Radar Chart */}
         {members.length > 0 && (
           <div className="mb-6 bg-slate-800/60 rounded-2xl border border-slate-700/50 p-5">
-            <h2 className="text-lg font-bold text-white mb-4">Top 3 — Skill Radar</h2>
+            <h2 className="text-lg font-bold text-white mb-4">Top 3 Skill Radar</h2>
             <ResponsiveContainer width="100%" height={400}>
               <RadarChart data={ratingChartData}>
                 <PolarGrid stroke="#334155" />

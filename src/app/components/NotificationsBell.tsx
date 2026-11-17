@@ -110,7 +110,7 @@ export default function NotificationsBell() {
               <Bell className="size-5" />
               Notifications
             </DialogTitle>
-            <DialogDescription>Group activity — joins and invites you've sent.</DialogDescription>
+            <DialogDescription>Group activity: joins and invites you've sent.</DialogDescription>
           </DialogHeader>
           <div className="max-h-96 overflow-y-auto -mx-1 px-1 space-y-1">
             {notifications.length === 0 ? (

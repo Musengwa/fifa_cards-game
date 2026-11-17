@@ -26,9 +26,9 @@ const DEFAULT_STATS: Stat[] = [
 ];
 
 const THEME_OPTIONS: { key: CardTheme; label: string; preview: string }[] = [
-  { key: 'greenOrange', label: 'Classic Gold', preview: 'from-yellow-200 via-yellow-400 to-amber-500' },
-  { key: 'whiteGold', label: 'White & Gold', preview: 'from-amber-300 to-yellow-200' },
-  { key: 'blackPurple', label: 'Black & Purple', preview: 'from-purple-700 to-fuchsia-500' },
+  { key: 'greenOrange', label: 'Classic', preview: 'from-yellow-200 via-yellow-400 to-amber-500' },
+  { key: 'whiteGold', label: 'Legendary', preview: 'from-amber-300 to-yellow-200' },
+  { key: 'blackPurple', label: 'Custom', preview: 'from-purple-700 to-fuchsia-500' },
 ];
 
 interface CardCreatorProps {

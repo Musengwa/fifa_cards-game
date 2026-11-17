@@ -208,7 +208,7 @@ export default function CreateGroup() {
                     checked={newAwardIsMain}
                     onCheckedChange={(checked) => setNewAwardIsMain(checked === true)}
                   />
-                  Main award (e.g. Ballon d'Or) — shown bigger, with extra confetti
+                  Main award (e.g. Ballon d'Or), shown bigger, with extra confetti
                 </label>
                 <div className="flex flex-wrap gap-2 mt-3">
                   {awardCategories.map((award) => {

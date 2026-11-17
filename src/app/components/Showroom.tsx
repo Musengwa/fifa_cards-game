@@ -17,12 +17,6 @@ interface MemberWithStats extends Member {
   awardsWon: number;
 }
 
-const medalColors = [
-  'from-yellow-400 to-amber-600', // gold
-  'from-gray-300 to-gray-500',    // silver
-  'from-amber-600 to-amber-900',  // bronze
-];
-
 /** Shortest signed distance from `index` to `i` around a circular deck of `total` cards. */
 function circularOffset(i: number, index: number, total: number) {
   let diff = i - index;
@@ -127,26 +121,6 @@ function MemberCarousel({
 
   return (
     <div className="relative">
-      {/* Rank badge */}
-      <div className="flex justify-center mb-2">
-        {rank === 1 ? (
-          <div className="relative">
-            <div className={`absolute inset-0 ${accentBg} rounded-full blur-xl opacity-60 animate-pulse`} />
-            <div className={`relative w-14 h-14 rounded-full bg-gradient-to-br ${medalColors[0]} flex items-center justify-center shadow-2xl`}>
-              <Trophy className="w-8 h-8 text-white" />
-            </div>
-          </div>
-        ) : (
-          <div
-            className={`w-12 h-12 rounded-full bg-gradient-to-br ${
-              medalColors[Math.min(rank - 1, 2)] || 'from-slate-500 to-slate-700'
-            } flex items-center justify-center text-xl font-black text-white shadow-lg`}
-          >
-            {rank}
-          </div>
-        )}
-      </div>
-
       {/* Stage — `zoom` (not `scale`) so the reduction actually shrinks the box's
           layout footprint, not just its visual appearance: unlike a transform, this
           genuinely frees up the vertical space that was getting the deck clipped on
@@ -260,7 +234,7 @@ const themes: Record<
   }
 > = {
   greenOrange: {
-    name: 'Yellow & Green',
+    name: 'Classic',
     cardTheme: 'greenOrange',
     bgGradient: 'from-green-950 via-emerald-900 to-green-950',
     textPrimary: 'text-white',
@@ -273,7 +247,7 @@ const themes: Record<
     spotlightRing: 'ring-yellow-400',
   },
   whiteGold: {
-    name: 'White & Gold',
+    name: 'Legendary',
     cardTheme: 'whiteGold',
     bgGradient: 'from-amber-50 via-yellow-100 to-amber-200',
     textPrimary: 'text-gray-900',
@@ -286,7 +260,7 @@ const themes: Record<
     spotlightRing: 'ring-amber-400',
   },
   blackPurple: {
-    name: 'Black & Purple',
+    name: 'Custom',
     cardTheme: 'blackPurple',
     bgGradient: 'from-black via-purple-950 to-black',
     textPrimary: 'text-white',

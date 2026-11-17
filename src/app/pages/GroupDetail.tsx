@@ -682,7 +682,7 @@ export default function GroupDetail() {
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2 text-red-600">
                         <AlertTriangle className="w-5 h-5" />
-                        End Session — This Cannot Be Undone
+                        End Session: This Cannot Be Undone
                       </DialogTitle>
                       <DialogDescription>
                         Ending the session will permanently stop all rating and voting, release cards to all members, and display final results. This action is irreversible.
@@ -805,7 +805,7 @@ export default function GroupDetail() {
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2 text-red-600">
                       <AlertTriangle className="w-5 h-5" />
-                      Delete Group — This Cannot Be Undone
+                      Delete Group: This Cannot Be Undone
                     </DialogTitle>
                     <DialogDescription>
                       Deleting this group permanently removes it, along with every rating, vote, and
