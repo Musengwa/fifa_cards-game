@@ -121,7 +121,7 @@ export default function Analytics() {
   const axisStyle = { fill: '#94a3b8', fontSize: 11 };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br ${tokens.bgGradient} p-3 sm:p-6 pb-24`}>
+    <div className={`min-h-screen -mt-20 bg-gradient-to-br ${tokens.bgGradient} px-3 sm:px-6 pt-[5.75rem] sm:pt-[6.5rem] pb-24`}>
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}

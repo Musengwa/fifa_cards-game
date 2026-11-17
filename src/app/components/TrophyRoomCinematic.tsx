@@ -215,7 +215,7 @@ function AwardSegment({
 
   return (
     <section
-      className="relative h-full w-full overflow-hidden bg-black"
+      className="relative h-full w-full overflow-hidden bg-black pt-20"
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(250,204,21,0.18),_transparent_30%),radial-gradient(circle_at_bottom,_rgba(96,165,250,0.12),_transparent_30%)]" />
       {lights.map((light, i) => (

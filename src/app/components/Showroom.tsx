@@ -332,7 +332,7 @@ export default function Showroom({ members, attributes, ratings, starRatings = {
       // strip left it, the card grows the page and the outer view scrolls to it
       // instead of getting silently clipped at the bottom — that's what was
       // "cutting off" cards on shorter desktop viewports.
-      className={`min-h-full bg-gradient-to-br ${t.bgGradient} flex flex-col p-3 sm:p-4 lg:p-6 overflow-x-hidden`}
+      className={`min-h-full bg-gradient-to-br ${t.bgGradient} flex flex-col px-3 pb-3 pt-[5.75rem] sm:px-4 sm:pb-4 sm:pt-24 lg:px-6 lg:pb-6 lg:pt-[6.5rem] overflow-x-hidden`}
     >
       <div className="max-w-7xl mx-auto w-full flex flex-col flex-1 min-h-0">
 

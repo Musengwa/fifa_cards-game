@@ -499,7 +499,7 @@ export default function GroupDetail() {
   if (group.sessionEnded) {
     return (
       <div
-        className={`h-screen flex flex-col bg-gradient-to-br ${
+        className={`h-screen -mt-20 flex flex-col bg-gradient-to-br ${
           postSessionTab === 'trophies' ? 'from-black via-zinc-950 to-black' : tokens.bgGradient
         }`}
       >

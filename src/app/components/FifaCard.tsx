@@ -13,7 +13,7 @@ export const POSITIONS = [
   'CDM', 'CM', 'CAM', 'RM', 'LM',
   'RW', 'LW', 'CF', 'ST',
 ];
-const greenShieldBg = new URL('./card-images/green.png', import.meta.url).href;
+const classicShieldBg = new URL('./card-images/classic.png', import.meta.url).href;
 const purpleShieldBg = new URL('./card-images/Clipped_image_20260805_155650.png', import.meta.url).href;
 const goldShieldBg = new URL('./card-images/Clipped_image_20260805_180319.png', import.meta.url).href;
 
@@ -36,7 +36,7 @@ export interface CardThemeStyles {
 
 export const cardThemeStyles: Record<CardTheme, CardThemeStyles> = {
   greenOrange: {
-    // Classic FIFA-style: golden border, deep green interior
+    // Classic gold card
     outerGradient: 'from-yellow-400 via-amber-300 to-yellow-500',
     innerBg: 'from-green-800 via-green-900 to-emerald-950',
     overallText: 'text-yellow-300',
@@ -83,7 +83,7 @@ export const cardThemeStyles: Record<CardTheme, CardThemeStyles> = {
 // Every theme is text overlaid on a pre-designed shield graphic. 'sideBadges' stacks
 // the flag/club badge under the OVR block with a two-column stat grid (purple & gold
 // reference cards); 'bottomBadges' runs stats in a single row with the flag/club
-// centered beneath, mirroring the green & yellow reference card.
+// centered beneath, on the classic gold card.
 type ShieldLayout = 'sideBadges' | 'bottomBadges';
 
 interface ShieldTheme {
@@ -104,19 +104,19 @@ interface ShieldTheme {
 
 const SHIELD_THEMES: Record<CardTheme, ShieldTheme> = {
   greenOrange: {
-    bg: greenShieldBg,
-    aspectRatio: '955 / 1374',
+    bg: classicShieldBg,
+    aspectRatio: '499 / 792',
     layout: 'bottomBadges',
-    ovr: 'text-white',
-    pos: 'text-yellow-300',
-    name: 'text-white',
-    statValue: 'text-white',
-    statLabel: 'text-yellow-300/90',
+    ovr: 'text-[#3d2a05]',
+    pos: 'text-[#5c4210]',
+    name: 'text-[#2e1f03]',
+    statValue: 'text-[#2e1f03]',
+    statLabel: 'text-[#6b4f14]',
     divider: '',
-    notRated: 'text-yellow-200/50',
-    shadow: 'drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]',
-    placeholderIcon: 'text-white/20',
-    shine: 'rgba(255,255,255,0.45)',
+    notRated: 'text-[#6b4f14]/60',
+    shadow: 'drop-shadow-[0_1px_0_rgba(255,244,200,0.7)]',
+    placeholderIcon: 'text-[#6b4f14]/30',
+    shine: 'rgba(255,255,255,0.5)',
   },
   whiteGold: {
     bg: goldShieldBg,
@@ -420,7 +420,7 @@ export default function FifaCard({
   const notRatedBanner = !hasRatings && attributes.length === 0 && (
     <div
       className={`absolute text-center text-[10px] italic ${shield.notRated}`}
-      style={{ top: shield.layout === 'bottomBadges' ? '74%' : '70%', left: 0, width: '100%' }}
+      style={{ top: shield.layout === 'bottomBadges' ? '68%' : '70%', left: 0, width: '100%' }}
     >
       Not yet rated
     </div>
@@ -454,7 +454,7 @@ export default function FifaCard({
       {/* OVR + position */}
       <div
         className="absolute flex flex-col items-center text-center"
-        style={{ top: shield.layout === 'bottomBadges' ? '10%' : '13%', left: '8%', width: '26%' }}
+        style={{ top: '13%', left: shield.layout === 'bottomBadges' ? '9%' : '8%', width: '26%' }}
       >
         <span className={`text-5xl font-black leading-none ${shield.ovr} ${shield.shadow}`}>
           {overall || '—'}
@@ -678,11 +678,10 @@ export default function FifaCard({
           <div
             className="absolute overflow-hidden"
             style={{
-              padding: '2%',
-              top: '19%',
-              left: '25%',
-              width: '53%',
-              height: '40%',
+              top: '12%',
+              left: '33%',
+              width: '58%',
+              height: '43%',
               WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
               maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)',
             }}
@@ -725,7 +724,7 @@ export default function FifaCard({
           </div>
 
           {/* Name */}
-          <div className="absolute text-center" style={{ top: '62%', left: '7%', width: '86%' }}>
+          <div className="absolute text-center" style={{ top: '56%', left: '8%', width: '84%' }}>
             {edit?.onNameChange ? (
               <input
                 value={user.name}
@@ -750,7 +749,7 @@ export default function FifaCard({
 
           {/* Stats — single row, label above value, matching the reference layout */}
           {(attributes.length > 0 || edit?.onAttrAdd) && (
-            <div className="absolute" style={{ top: '71%', left: '8%', width: '84%', height: '13%' }}>
+            <div className="absolute" style={{ top: '65%', left: '9%', width: '82%', height: '13%' }}>
               <div
                 className="grid h-full"
                 style={{ gridTemplateColumns: `repeat(${attributes.length + (edit?.onAttrAdd && edit.canAddAttr !== false ? 1 : 0)}, minmax(0, 1fr))` }}
@@ -776,7 +775,7 @@ export default function FifaCard({
           {(user.nationalityFlagUrl || user.clubLogoUrl || edit?.onNationTap || edit?.onClubTap) && (
             <div
               className="absolute flex items-center justify-center gap-3"
-              style={{ top: '87%', left: 0, width: '100%' }}
+              style={{ top: '81%', left: 0, width: '100%' }}
             >
               {(user.nationalityFlagUrl || edit?.onNationTap) && (
                 <div style={{ width: '9%' }}>
